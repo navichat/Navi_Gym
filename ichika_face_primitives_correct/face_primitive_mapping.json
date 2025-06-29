@@ -1,0 +1,58 @@
+[
+  {
+    "filename": "face_face_mouth_p0.obj",
+    "primitive_idx": 0,
+    "material_name": "face_mouth",
+    "face_count": 1696,
+    "suggested_texture": "texture_00.png"
+  },
+  {
+    "filename": "face_eye_iris_p1.obj",
+    "primitive_idx": 1,
+    "material_name": "eye_iris",
+    "face_count": 368,
+    "suggested_texture": "texture_03.png"
+  },
+  {
+    "filename": "face_eye_highlight_p2.obj",
+    "primitive_idx": 2,
+    "material_name": "eye_highlight",
+    "face_count": 235,
+    "suggested_texture": "texture_04.png"
+  },
+  {
+    "filename": "face_main_face_p3.obj",
+    "primitive_idx": 3,
+    "material_name": "main_face",
+    "face_count": 4232,
+    "suggested_texture": "texture_05.png"
+  },
+  {
+    "filename": "face_eye_white_p4.obj",
+    "primitive_idx": 4,
+    "material_name": "eye_white",
+    "face_count": 528,
+    "suggested_texture": "texture_09.png"
+  },
+  {
+    "filename": "face_eyebrow_p5.obj",
+    "primitive_idx": 5,
+    "material_name": "eyebrow",
+    "face_count": 54,
+    "suggested_texture": "texture_10.png"
+  },
+  {
+    "filename": "face_eyelash_p6.obj",
+    "primitive_idx": 6,
+    "material_name": "eyelash",
+    "face_count": 14,
+    "suggested_texture": "texture_11.png"
+  },
+  {
+    "filename": "face_eyeline_p7.obj",
+    "primitive_idx": 7,
+    "material_name": "eyeline",
+    "face_count": 136,
+    "suggested_texture": "texture_12.png"
+  }
+]

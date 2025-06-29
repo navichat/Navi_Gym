@@ -1,0 +1,10 @@
+# Minimal requirements for basic functionality
+# This is a subset of requirements.txt for initial setup
+
+torch>=2.0.0
+numpy>=1.21.0
+taichi>=1.7.0  # Required for Genesis
+gymnasium>=0.28.0
+websockets>=11.0.0
+aiohttp>=3.8.0
+tqdm>=4.62.0

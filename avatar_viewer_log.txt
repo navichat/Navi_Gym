@@ -1,0 +1,34 @@
+Avatar Viewer Log - Started at 2025-06-27 11:20:51.236480
+============================================================
+[11:20:51] 🎮 AVATAR VIEWER STARTING
+[11:20:51] Python: /home/barberb/Navi_Gym/navi_gym_env/bin/python3
+[11:20:51] Working dir: /home/barberb/Navi_Gym
+[11:20:51] Display: :0
+[11:20:51] Importing Genesis...
+[11:21:04] ✅ Genesis imported successfully!
+[11:21:04] Initializing Genesis with GPU backend...
+[11:21:05] ✅ Genesis initialized!
+[11:21:05] Creating scene with 3D viewer...
+[11:21:06] ✅ Scene created!
+[11:21:06] Adding ground plane...
+[11:21:06] ❌ ERROR: Unrecognized attribute: size
+[11:21:06] Full traceback:
+[11:21:06] Traceback (most recent call last):
+  File "/home/barberb/Navi_Gym/logging_avatar_viewer.py", line 62, in main
+    ground = scene.add_entity(gs.morphs.Plane(pos=(0, 0, 0), size=(5, 5)))
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/barberb/Navi_Gym/genesis/options/morphs.py", line 339, in __init__
+    super().__init__(**data)
+  File "/home/barberb/Navi_Gym/genesis/utils/misc.py", line 123, in new_init
+    original_init(self, *args, **kwargs)
+  File "/home/barberb/Navi_Gym/genesis/options/morphs.py", line 75, in __init__
+    super().__init__(**data)
+  File "/home/barberb/Navi_Gym/genesis/options/options.py", line 27, in __init__
+    gs.raise_exception(f"Unrecognized attribute: {key}")
+  File "/home/barberb/Navi_Gym/genesis/utils/misc.py", line 40, in raise_exception
+    raise gs.GenesisException(msg)
+genesis.GenesisException: Unrecognized attribute: size
+
+[11:21:06] 🧹 Cleaning up...
+[11:21:06] ✅ Genesis cleanup complete
+[11:21:06] Avatar viewer session ended.

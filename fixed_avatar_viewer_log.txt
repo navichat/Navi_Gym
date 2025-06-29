@@ -1,0 +1,60 @@
+Fixed Avatar Viewer Log - Started at 2025-06-27 11:22:03.983868
+============================================================
+[11:22:03] 🎮 FIXED AVATAR VIEWER STARTING
+[11:22:03] Python: /home/barberb/Navi_Gym/navi_gym_env/bin/python3
+[11:22:03] Display: :0
+[11:22:03] Importing Genesis...
+[11:22:16] ✅ Genesis imported successfully!
+[11:22:16] Initializing Genesis with GPU backend...
+[11:22:17] ✅ Genesis initialized!
+[11:22:17] Creating scene with 3D viewer...
+[11:22:18] ✅ Scene created!
+[11:22:18] Adding ground plane (fixed syntax)...
+[11:22:18] ✅ Ground added!
+[11:22:18] Creating humanoid avatar...
+[11:22:18]   Adding head...
+[11:22:18]   Adding body...
+[11:22:18]   Adding left arm...
+[11:22:19]   Adding right arm...
+[11:22:19]   Adding left leg...
+[11:22:19]   Adding right leg...
+[11:22:19] ✅ Avatar created successfully!
+[11:22:19] Building scene...
+[11:26:34] ✅ Scene built!
+[11:26:34] 
+[11:26:34] 🎉 SUCCESS! 3D AVATAR VIEWER IS NOW RUNNING!
+[11:26:34] ============================================================
+[11:26:34] 🖼️  You should see a 3D window with:
+[11:26:34]     - Ground plane
+[11:26:34]     - Humanoid figure made of 6 boxes (head, body, 2 arms, 2 legs)
+[11:26:34]     - Blue/gray background
+[11:26:34] 
+[11:26:34] 🎮 Controls:
+[11:26:34]     🖱️  Mouse: Rotate camera around avatar
+[11:26:34]     ⌨️  WASD: Move camera position
+[11:26:34]     ⌨️  Q/E: Move camera up/down
+[11:26:34]     ⌨️  ESC: Exit viewer
+[11:26:34] ============================================================
+[11:26:34] 🚀 Starting simulation loop...
+[11:26:34] 💡 The 3D window should be visible now!
+[11:26:39] 📊 Frame 300: Running at 58.2 FPS - Window should be active!
+[11:26:44] 📊 Frame 600: Running at 58.3 FPS - Window should be active!
+[11:26:45] ❌ ERROR: Viewer closed.
+[11:26:45] Full traceback:
+[11:26:45] Traceback (most recent call last):
+  File "/home/barberb/Navi_Gym/fixed_avatar_viewer.py", line 116, in main
+    scene.step()
+  File "/home/barberb/Navi_Gym/genesis/utils/misc.py", line 144, in wrapper
+    return method(self, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/barberb/Navi_Gym/genesis/engine/scene.py", line 762, in step
+    self._visualizer.update(force=False, auto=refresh_visualizer)
+  File "/home/barberb/Navi_Gym/genesis/vis/visualizer.py", line 167, in update
+    gs.raise_exception("Viewer closed.")
+  File "/home/barberb/Navi_Gym/genesis/utils/misc.py", line 40, in raise_exception
+    raise gs.GenesisException(msg)
+genesis.GenesisException: Viewer closed.
+
+[11:26:45] 🧹 Cleaning up...
+[11:26:46] ✅ Genesis cleanup complete
+[11:26:46] 🏁 Fixed avatar viewer session ended.

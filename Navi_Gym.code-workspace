@@ -1,0 +1,24 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"name": "engine",
+			"path": "migrate_projects/engine"
+		},
+		{
+			"name": "chat",
+			"path": "migrate_projects/chat"
+		},
+		{
+			"name": "assets",
+			"path": "migrate_projects/assets"
+		},
+		{
+			"name": "studio",
+			"path": "migrate_projects/studio"
+		}
+	],
+	"settings": {}
+}

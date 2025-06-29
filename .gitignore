@@ -9,6 +9,10 @@ genesis/assets/terrain/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
+navi_gym_env/
+navi_gym_env*/
+.navi_gym_env/
+.navi_gym_env*/
 *.py[cod]
 *$py.class
 

@@ -1,0 +1,37 @@
+[
+  {
+    "filename": "body_main_body_skin_p0.obj",
+    "primitive_idx": 0,
+    "material_name": "main_body_skin",
+    "face_count": 8510,
+    "suggested_texture": "texture_13.png"
+  },
+  {
+    "filename": "body_white_blouse_p1.obj",
+    "primitive_idx": 1,
+    "material_name": "white_blouse",
+    "face_count": 1378,
+    "suggested_texture": "texture_08.png"
+  },
+  {
+    "filename": "body_hair_back_part_p2.obj",
+    "primitive_idx": 2,
+    "material_name": "hair_back_part",
+    "face_count": 1408,
+    "suggested_texture": "texture_16.png"
+  },
+  {
+    "filename": "body_blue_skirt_p3.obj",
+    "primitive_idx": 3,
+    "material_name": "blue_skirt",
+    "face_count": 700,
+    "suggested_texture": "texture_18.png"
+  },
+  {
+    "filename": "body_shoes_p4.obj",
+    "primitive_idx": 4,
+    "material_name": "shoes",
+    "face_count": 540,
+    "suggested_texture": "texture_19.png"
+  }
+]
