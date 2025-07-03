@@ -1,0 +1,1212 @@
+{
+  "metadata": {
+    "generator": "VRMBVHSkeletonMapper",
+    "created": "2025-07-02",
+    "root_bone": "hips",
+    "total_dof": 60,
+    "total_bones": 19,
+    "source_files": [
+      "ichika_genesis_skeleton.json",
+      "ichika_urdf_skeleton.json",
+      "BVH animation files"
+    ],
+    "compatible_systems": [
+      "ichika_vrm_final_display.py",
+      "Genesis physics simulation",
+      "BVH animation playback",
+      "VRM standard skeleton"
+    ]
+  },
+  "bones": {
+    "hips": {
+      "name": "hips",
+      "bvh_names": [
+        "Hips",
+        "CC_Base_Hip",
+        "CC_Base_Pelvis",
+        "pelvis",
+        "root"
+      ],
+      "parent": null,
+      "children": [
+        "spine",
+        "leftUpperLeg",
+        "rightUpperLeg"
+      ],
+      "position": [
+        0.0,
+        0.0,
+        0.9
+      ],
+      "rotation": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "genesis_joint_type": "fixed",
+      "joint_limits": {
+        "lower": [
+          0,
+          0,
+          0
+        ],
+        "upper": [
+          0,
+          0,
+          0
+        ]
+      },
+      "dof": 6,
+      "channels": [
+        "Xposition",
+        "Yposition",
+        "Zposition",
+        "Xrotation",
+        "Yrotation",
+        "Zrotation"
+      ]
+    },
+    "spine": {
+      "name": "spine",
+      "bvh_names": [
+        "Spine",
+        "CC_Base_Spine01",
+        "spine1"
+      ],
+      "parent": "hips",
+      "children": [
+        "chest"
+      ],
+      "position": [
+        0.0,
+        0.0,
+        0.15
+      ],
+      "rotation": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "genesis_joint_type": "revolute",
+      "joint_limits": {
+        "lower": [
+          -30,
+          -45,
+          -30
+        ],
+        "upper": [
+          30,
+          45,
+          30
+        ]
+      },
+      "dof": 3,
+      "channels": [
+        "Xrotation",
+        "Yrotation",
+        "Zrotation"
+      ]
+    },
+    "chest": {
+      "name": "chest",
+      "bvh_names": [
+        "Chest",
+        "Spine1",
+        "CC_Base_Spine02",
+        "upperChest"
+      ],
+      "parent": "spine",
+      "children": [
+        "neck",
+        "leftShoulder",
+        "rightShoulder"
+      ],
+      "position": [
+        0.0,
+        0.0,
+        0.2
+      ],
+      "rotation": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "genesis_joint_type": "revolute",
+      "joint_limits": {
+        "lower": [
+          -20,
+          -30,
+          -20
+        ],
+        "upper": [
+          20,
+          30,
+          20
+        ]
+      },
+      "dof": 3,
+      "channels": [
+        "Xrotation",
+        "Yrotation",
+        "Zrotation"
+      ]
+    },
+    "neck": {
+      "name": "neck",
+      "bvh_names": [
+        "Neck",
+        "CC_Base_Neck"
+      ],
+      "parent": "chest",
+      "children": [
+        "head"
+      ],
+      "position": [
+        0.0,
+        0.0,
+        0.2
+      ],
+      "rotation": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "genesis_joint_type": "revolute",
+      "joint_limits": {
+        "lower": [
+          -45,
+          -60,
+          -45
+        ],
+        "upper": [
+          45,
+          60,
+          45
+        ]
+      },
+      "dof": 3,
+      "channels": [
+        "Xrotation",
+        "Yrotation",
+        "Zrotation"
+      ]
+    },
+    "head": {
+      "name": "head",
+      "bvh_names": [
+        "Head",
+        "CC_Base_Head"
+      ],
+      "parent": "neck",
+      "children": [],
+      "position": [
+        0.0,
+        0.0,
+        0.15
+      ],
+      "rotation": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "genesis_joint_type": "revolute",
+      "joint_limits": {
+        "lower": [
+          -30,
+          -45,
+          -30
+        ],
+        "upper": [
+          30,
+          45,
+          30
+        ]
+      },
+      "dof": 3,
+      "channels": [
+        "Xrotation",
+        "Yrotation",
+        "Zrotation"
+      ]
+    },
+    "leftShoulder": {
+      "name": "leftShoulder",
+      "bvh_names": [
+        "LeftShoulder",
+        "CC_Base_L_Clavicle",
+        "LeftCollar"
+      ],
+      "parent": "chest",
+      "children": [
+        "leftUpperArm"
+      ],
+      "position": [
+        -0.15,
+        0.0,
+        0.1
+      ],
+      "rotation": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "genesis_joint_type": "revolute",
+      "joint_limits": {
+        "lower": [
+          -30,
+          -30,
+          -90
+        ],
+        "upper": [
+          30,
+          30,
+          90
+        ]
+      },
+      "dof": 3,
+      "channels": [
+        "Xrotation",
+        "Yrotation",
+        "Zrotation"
+      ]
+    },
+    "leftUpperArm": {
+      "name": "leftUpperArm",
+      "bvh_names": [
+        "LeftArm",
+        "LeftUpperArm",
+        "CC_Base_L_Upperarm"
+      ],
+      "parent": "leftShoulder",
+      "children": [
+        "leftLowerArm"
+      ],
+      "position": [
+        -0.15,
+        0.0,
+        -0.1
+      ],
+      "rotation": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "genesis_joint_type": "revolute",
+      "joint_limits": {
+        "lower": [
+          -180,
+          -90,
+          -45
+        ],
+        "upper": [
+          180,
+          180,
+          180
+        ]
+      },
+      "dof": 3,
+      "channels": [
+        "Xrotation",
+        "Yrotation",
+        "Zrotation"
+      ]
+    },
+    "leftLowerArm": {
+      "name": "leftLowerArm",
+      "bvh_names": [
+        "LeftForeArm",
+        "LeftLowerArm",
+        "CC_Base_L_Forearm"
+      ],
+      "parent": "leftUpperArm",
+      "children": [
+        "leftHand"
+      ],
+      "position": [
+        0.0,
+        0.0,
+        -0.3
+      ],
+      "rotation": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "genesis_joint_type": "revolute",
+      "joint_limits": {
+        "lower": [
+          -135,
+          -90,
+          -90
+        ],
+        "upper": [
+          0,
+          90,
+          90
+        ]
+      },
+      "dof": 3,
+      "channels": [
+        "Xrotation",
+        "Yrotation",
+        "Zrotation"
+      ]
+    },
+    "leftHand": {
+      "name": "leftHand",
+      "bvh_names": [
+        "LeftHand",
+        "CC_Base_L_Hand"
+      ],
+      "parent": "leftLowerArm",
+      "children": [],
+      "position": [
+        0.0,
+        0.0,
+        -0.25
+      ],
+      "rotation": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "genesis_joint_type": "revolute",
+      "joint_limits": {
+        "lower": [
+          -90,
+          -45,
+          -45
+        ],
+        "upper": [
+          90,
+          45,
+          45
+        ]
+      },
+      "dof": 3,
+      "channels": [
+        "Xrotation",
+        "Yrotation",
+        "Zrotation"
+      ]
+    },
+    "rightShoulder": {
+      "name": "rightShoulder",
+      "bvh_names": [
+        "RightShoulder",
+        "CC_Base_R_Clavicle",
+        "RightCollar"
+      ],
+      "parent": "chest",
+      "children": [
+        "rightUpperArm"
+      ],
+      "position": [
+        0.15,
+        0.0,
+        0.1
+      ],
+      "rotation": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "genesis_joint_type": "revolute",
+      "joint_limits": {
+        "lower": [
+          -30,
+          -30,
+          -90
+        ],
+        "upper": [
+          30,
+          30,
+          90
+        ]
+      },
+      "dof": 3,
+      "channels": [
+        "Xrotation",
+        "Yrotation",
+        "Zrotation"
+      ]
+    },
+    "rightUpperArm": {
+      "name": "rightUpperArm",
+      "bvh_names": [
+        "RightArm",
+        "RightUpperArm",
+        "CC_Base_R_Upperarm"
+      ],
+      "parent": "rightShoulder",
+      "children": [
+        "rightLowerArm"
+      ],
+      "position": [
+        0.15,
+        0.0,
+        -0.1
+      ],
+      "rotation": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "genesis_joint_type": "revolute",
+      "joint_limits": {
+        "lower": [
+          -180,
+          -180,
+          -180
+        ],
+        "upper": [
+          180,
+          90,
+          45
+        ]
+      },
+      "dof": 3,
+      "channels": [
+        "Xrotation",
+        "Yrotation",
+        "Zrotation"
+      ]
+    },
+    "rightLowerArm": {
+      "name": "rightLowerArm",
+      "bvh_names": [
+        "RightForeArm",
+        "RightLowerArm",
+        "CC_Base_R_Forearm"
+      ],
+      "parent": "rightUpperArm",
+      "children": [
+        "rightHand"
+      ],
+      "position": [
+        0.0,
+        0.0,
+        -0.3
+      ],
+      "rotation": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "genesis_joint_type": "revolute",
+      "joint_limits": {
+        "lower": [
+          -135,
+          -90,
+          -90
+        ],
+        "upper": [
+          0,
+          90,
+          90
+        ]
+      },
+      "dof": 3,
+      "channels": [
+        "Xrotation",
+        "Yrotation",
+        "Zrotation"
+      ]
+    },
+    "rightHand": {
+      "name": "rightHand",
+      "bvh_names": [
+        "RightHand",
+        "CC_Base_R_Hand"
+      ],
+      "parent": "rightLowerArm",
+      "children": [],
+      "position": [
+        0.0,
+        0.0,
+        -0.25
+      ],
+      "rotation": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "genesis_joint_type": "revolute",
+      "joint_limits": {
+        "lower": [
+          -90,
+          -45,
+          -45
+        ],
+        "upper": [
+          90,
+          45,
+          45
+        ]
+      },
+      "dof": 3,
+      "channels": [
+        "Xrotation",
+        "Yrotation",
+        "Zrotation"
+      ]
+    },
+    "leftUpperLeg": {
+      "name": "leftUpperLeg",
+      "bvh_names": [
+        "LeftUpLeg",
+        "LeftThigh",
+        "CC_Base_L_Thigh"
+      ],
+      "parent": "hips",
+      "children": [
+        "leftLowerLeg"
+      ],
+      "position": [
+        -0.1,
+        0.0,
+        -0.1
+      ],
+      "rotation": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "genesis_joint_type": "revolute",
+      "joint_limits": {
+        "lower": [
+          -120,
+          -45,
+          -45
+        ],
+        "upper": [
+          30,
+          45,
+          45
+        ]
+      },
+      "dof": 3,
+      "channels": [
+        "Xrotation",
+        "Yrotation",
+        "Zrotation"
+      ]
+    },
+    "leftLowerLeg": {
+      "name": "leftLowerLeg",
+      "bvh_names": [
+        "LeftLeg",
+        "LeftShin",
+        "CC_Base_L_Calf"
+      ],
+      "parent": "leftUpperLeg",
+      "children": [
+        "leftFoot"
+      ],
+      "position": [
+        0.0,
+        0.0,
+        -0.4
+      ],
+      "rotation": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "genesis_joint_type": "revolute",
+      "joint_limits": {
+        "lower": [
+          -135,
+          -10,
+          -10
+        ],
+        "upper": [
+          0,
+          10,
+          10
+        ]
+      },
+      "dof": 3,
+      "channels": [
+        "Xrotation",
+        "Yrotation",
+        "Zrotation"
+      ]
+    },
+    "leftFoot": {
+      "name": "leftFoot",
+      "bvh_names": [
+        "LeftFoot",
+        "CC_Base_L_Foot"
+      ],
+      "parent": "leftLowerLeg",
+      "children": [],
+      "position": [
+        0.0,
+        0.0,
+        -0.4
+      ],
+      "rotation": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "genesis_joint_type": "revolute",
+      "joint_limits": {
+        "lower": [
+          -45,
+          -30,
+          -30
+        ],
+        "upper": [
+          45,
+          30,
+          30
+        ]
+      },
+      "dof": 3,
+      "channels": [
+        "Xrotation",
+        "Yrotation",
+        "Zrotation"
+      ]
+    },
+    "rightUpperLeg": {
+      "name": "rightUpperLeg",
+      "bvh_names": [
+        "RightUpLeg",
+        "RightThigh",
+        "CC_Base_R_Thigh"
+      ],
+      "parent": "hips",
+      "children": [
+        "rightLowerLeg"
+      ],
+      "position": [
+        0.1,
+        0.0,
+        -0.1
+      ],
+      "rotation": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "genesis_joint_type": "revolute",
+      "joint_limits": {
+        "lower": [
+          -120,
+          -45,
+          -45
+        ],
+        "upper": [
+          30,
+          45,
+          45
+        ]
+      },
+      "dof": 3,
+      "channels": [
+        "Xrotation",
+        "Yrotation",
+        "Zrotation"
+      ]
+    },
+    "rightLowerLeg": {
+      "name": "rightLowerLeg",
+      "bvh_names": [
+        "RightLeg",
+        "RightShin",
+        "CC_Base_R_Calf"
+      ],
+      "parent": "rightUpperLeg",
+      "children": [
+        "rightFoot"
+      ],
+      "position": [
+        0.0,
+        0.0,
+        -0.4
+      ],
+      "rotation": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "genesis_joint_type": "revolute",
+      "joint_limits": {
+        "lower": [
+          -135,
+          -10,
+          -10
+        ],
+        "upper": [
+          0,
+          10,
+          10
+        ]
+      },
+      "dof": 3,
+      "channels": [
+        "Xrotation",
+        "Yrotation",
+        "Zrotation"
+      ]
+    },
+    "rightFoot": {
+      "name": "rightFoot",
+      "bvh_names": [
+        "RightFoot",
+        "CC_Base_R_Foot"
+      ],
+      "parent": "rightLowerLeg",
+      "children": [],
+      "position": [
+        0.0,
+        0.0,
+        -0.4
+      ],
+      "rotation": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "genesis_joint_type": "revolute",
+      "joint_limits": {
+        "lower": [
+          -45,
+          -30,
+          -30
+        ],
+        "upper": [
+          45,
+          30,
+          30
+        ]
+      },
+      "dof": 3,
+      "channels": [
+        "Xrotation",
+        "Yrotation",
+        "Zrotation"
+      ]
+    }
+  },
+  "genesis_joints": {
+    "hips_spine": {
+      "parent": "hips",
+      "child": "spine",
+      "type": "revolute",
+      "limits": {
+        "lower": [
+          -30,
+          -45,
+          -30
+        ],
+        "upper": [
+          30,
+          45,
+          30
+        ]
+      },
+      "position": [
+        0.0,
+        0.0,
+        0.15
+      ]
+    },
+    "spine_chest": {
+      "parent": "spine",
+      "child": "chest",
+      "type": "revolute",
+      "limits": {
+        "lower": [
+          -20,
+          -30,
+          -20
+        ],
+        "upper": [
+          20,
+          30,
+          20
+        ]
+      },
+      "position": [
+        0.0,
+        0.0,
+        0.2
+      ]
+    },
+    "chest_neck": {
+      "parent": "chest",
+      "child": "neck",
+      "type": "revolute",
+      "limits": {
+        "lower": [
+          -45,
+          -60,
+          -45
+        ],
+        "upper": [
+          45,
+          60,
+          45
+        ]
+      },
+      "position": [
+        0.0,
+        0.0,
+        0.2
+      ]
+    },
+    "neck_head": {
+      "parent": "neck",
+      "child": "head",
+      "type": "revolute",
+      "limits": {
+        "lower": [
+          -30,
+          -45,
+          -30
+        ],
+        "upper": [
+          30,
+          45,
+          30
+        ]
+      },
+      "position": [
+        0.0,
+        0.0,
+        0.15
+      ]
+    },
+    "chest_leftShoulder": {
+      "parent": "chest",
+      "child": "leftShoulder",
+      "type": "revolute",
+      "limits": {
+        "lower": [
+          -30,
+          -30,
+          -90
+        ],
+        "upper": [
+          30,
+          30,
+          90
+        ]
+      },
+      "position": [
+        -0.15,
+        0.0,
+        0.1
+      ]
+    },
+    "leftShoulder_leftUpperArm": {
+      "parent": "leftShoulder",
+      "child": "leftUpperArm",
+      "type": "revolute",
+      "limits": {
+        "lower": [
+          -180,
+          -90,
+          -45
+        ],
+        "upper": [
+          180,
+          180,
+          180
+        ]
+      },
+      "position": [
+        -0.15,
+        0.0,
+        -0.1
+      ]
+    },
+    "leftUpperArm_leftLowerArm": {
+      "parent": "leftUpperArm",
+      "child": "leftLowerArm",
+      "type": "revolute",
+      "limits": {
+        "lower": [
+          -135,
+          -90,
+          -90
+        ],
+        "upper": [
+          0,
+          90,
+          90
+        ]
+      },
+      "position": [
+        0.0,
+        0.0,
+        -0.3
+      ]
+    },
+    "leftLowerArm_leftHand": {
+      "parent": "leftLowerArm",
+      "child": "leftHand",
+      "type": "revolute",
+      "limits": {
+        "lower": [
+          -90,
+          -45,
+          -45
+        ],
+        "upper": [
+          90,
+          45,
+          45
+        ]
+      },
+      "position": [
+        0.0,
+        0.0,
+        -0.25
+      ]
+    },
+    "chest_rightShoulder": {
+      "parent": "chest",
+      "child": "rightShoulder",
+      "type": "revolute",
+      "limits": {
+        "lower": [
+          -30,
+          -30,
+          -90
+        ],
+        "upper": [
+          30,
+          30,
+          90
+        ]
+      },
+      "position": [
+        0.15,
+        0.0,
+        0.1
+      ]
+    },
+    "rightShoulder_rightUpperArm": {
+      "parent": "rightShoulder",
+      "child": "rightUpperArm",
+      "type": "revolute",
+      "limits": {
+        "lower": [
+          -180,
+          -180,
+          -180
+        ],
+        "upper": [
+          180,
+          90,
+          45
+        ]
+      },
+      "position": [
+        0.15,
+        0.0,
+        -0.1
+      ]
+    },
+    "rightUpperArm_rightLowerArm": {
+      "parent": "rightUpperArm",
+      "child": "rightLowerArm",
+      "type": "revolute",
+      "limits": {
+        "lower": [
+          -135,
+          -90,
+          -90
+        ],
+        "upper": [
+          0,
+          90,
+          90
+        ]
+      },
+      "position": [
+        0.0,
+        0.0,
+        -0.3
+      ]
+    },
+    "rightLowerArm_rightHand": {
+      "parent": "rightLowerArm",
+      "child": "rightHand",
+      "type": "revolute",
+      "limits": {
+        "lower": [
+          -90,
+          -45,
+          -45
+        ],
+        "upper": [
+          90,
+          45,
+          45
+        ]
+      },
+      "position": [
+        0.0,
+        0.0,
+        -0.25
+      ]
+    },
+    "hips_leftUpperLeg": {
+      "parent": "hips",
+      "child": "leftUpperLeg",
+      "type": "revolute",
+      "limits": {
+        "lower": [
+          -120,
+          -45,
+          -45
+        ],
+        "upper": [
+          30,
+          45,
+          45
+        ]
+      },
+      "position": [
+        -0.1,
+        0.0,
+        -0.1
+      ]
+    },
+    "leftUpperLeg_leftLowerLeg": {
+      "parent": "leftUpperLeg",
+      "child": "leftLowerLeg",
+      "type": "revolute",
+      "limits": {
+        "lower": [
+          -135,
+          -10,
+          -10
+        ],
+        "upper": [
+          0,
+          10,
+          10
+        ]
+      },
+      "position": [
+        0.0,
+        0.0,
+        -0.4
+      ]
+    },
+    "leftLowerLeg_leftFoot": {
+      "parent": "leftLowerLeg",
+      "child": "leftFoot",
+      "type": "revolute",
+      "limits": {
+        "lower": [
+          -45,
+          -30,
+          -30
+        ],
+        "upper": [
+          45,
+          30,
+          30
+        ]
+      },
+      "position": [
+        0.0,
+        0.0,
+        -0.4
+      ]
+    },
+    "hips_rightUpperLeg": {
+      "parent": "hips",
+      "child": "rightUpperLeg",
+      "type": "revolute",
+      "limits": {
+        "lower": [
+          -120,
+          -45,
+          -45
+        ],
+        "upper": [
+          30,
+          45,
+          45
+        ]
+      },
+      "position": [
+        0.1,
+        0.0,
+        -0.1
+      ]
+    },
+    "rightUpperLeg_rightLowerLeg": {
+      "parent": "rightUpperLeg",
+      "child": "rightLowerLeg",
+      "type": "revolute",
+      "limits": {
+        "lower": [
+          -135,
+          -10,
+          -10
+        ],
+        "upper": [
+          0,
+          10,
+          10
+        ]
+      },
+      "position": [
+        0.0,
+        0.0,
+        -0.4
+      ]
+    },
+    "rightLowerLeg_rightFoot": {
+      "parent": "rightLowerLeg",
+      "child": "rightFoot",
+      "type": "revolute",
+      "limits": {
+        "lower": [
+          -45,
+          -30,
+          -30
+        ],
+        "upper": [
+          45,
+          30,
+          30
+        ]
+      },
+      "position": [
+        0.0,
+        0.0,
+        -0.4
+      ]
+    }
+  }
+}

@@ -1,0 +1,1154 @@
+{
+  "metadata": {
+    "source": "urdf",
+    "file": "/home/barberb/Navi_Gym/ichika.urdf",
+    "links_count": 12,
+    "joints_count": 11
+  },
+  "bones": {
+    "base": {
+      "name": "base",
+      "type": "link",
+      "visual": {
+        "origin": {
+          "xyz": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "rpy": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "geometry": {
+          "type": "box",
+          "size": [
+            0.4,
+            0.24,
+            0.8
+          ]
+        }
+      },
+      "collision": {
+        "origin": {
+          "xyz": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "rpy": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "geometry": {
+          "type": "box",
+          "size": [
+            0.4,
+            0.24,
+            0.8
+          ]
+        }
+      },
+      "inertial": {
+        "origin": {
+          "xyz": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "rpy": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "mass": 10.0,
+        "inertia": {
+          "ixx": 0.5,
+          "ixy": 0.0,
+          "ixz": 0.0,
+          "iyy": 0.5,
+          "iyz": 0.0,
+          "izz": 0.3
+        }
+      }
+    },
+    "head": {
+      "name": "head",
+      "type": "link",
+      "visual": {
+        "origin": {
+          "xyz": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "rpy": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "geometry": {
+          "type": "sphere",
+          "radius": 0.3
+        }
+      },
+      "collision": {
+        "origin": {
+          "xyz": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "rpy": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "geometry": {
+          "type": "sphere",
+          "radius": 0.3
+        }
+      },
+      "inertial": {
+        "origin": {
+          "xyz": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "rpy": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "mass": 2.0,
+        "inertia": {
+          "ixx": 0.05,
+          "ixy": 0.0,
+          "ixz": 0.0,
+          "iyy": 0.05,
+          "iyz": 0.0,
+          "izz": 0.05
+        }
+      }
+    },
+    "left_upper_arm": {
+      "name": "left_upper_arm",
+      "type": "link",
+      "visual": {
+        "origin": {
+          "xyz": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "rpy": [
+            0.0,
+            1.57,
+            0.0
+          ]
+        },
+        "geometry": {
+          "type": "cylinder",
+          "radius": 0.08,
+          "length": 0.4
+        }
+      },
+      "collision": {
+        "origin": {
+          "xyz": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "rpy": [
+            0.0,
+            1.57,
+            0.0
+          ]
+        },
+        "geometry": {
+          "type": "cylinder",
+          "radius": 0.08,
+          "length": 0.4
+        }
+      },
+      "inertial": {
+        "origin": {
+          "xyz": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "rpy": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "mass": 1.5,
+        "inertia": {
+          "ixx": 0.02,
+          "ixy": 0.0,
+          "ixz": 0.0,
+          "iyy": 0.02,
+          "iyz": 0.0,
+          "izz": 0.005
+        }
+      }
+    },
+    "left_forearm": {
+      "name": "left_forearm",
+      "type": "link",
+      "visual": {
+        "origin": {
+          "xyz": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "rpy": [
+            0.0,
+            1.57,
+            0.0
+          ]
+        },
+        "geometry": {
+          "type": "cylinder",
+          "radius": 0.06,
+          "length": 0.3
+        }
+      },
+      "collision": {
+        "origin": {
+          "xyz": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "rpy": [
+            0.0,
+            1.57,
+            0.0
+          ]
+        },
+        "geometry": {
+          "type": "cylinder",
+          "radius": 0.06,
+          "length": 0.3
+        }
+      },
+      "inertial": {
+        "origin": {
+          "xyz": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "rpy": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "mass": 1.0,
+        "inertia": {
+          "ixx": 0.01,
+          "ixy": 0.0,
+          "ixz": 0.0,
+          "iyy": 0.01,
+          "iyz": 0.0,
+          "izz": 0.003
+        }
+      }
+    },
+    "right_upper_arm": {
+      "name": "right_upper_arm",
+      "type": "link",
+      "visual": {
+        "origin": {
+          "xyz": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "rpy": [
+            0.0,
+            1.57,
+            0.0
+          ]
+        },
+        "geometry": {
+          "type": "cylinder",
+          "radius": 0.08,
+          "length": 0.4
+        }
+      },
+      "collision": {
+        "origin": {
+          "xyz": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "rpy": [
+            0.0,
+            1.57,
+            0.0
+          ]
+        },
+        "geometry": {
+          "type": "cylinder",
+          "radius": 0.08,
+          "length": 0.4
+        }
+      },
+      "inertial": {
+        "origin": {
+          "xyz": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "rpy": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "mass": 1.5,
+        "inertia": {
+          "ixx": 0.02,
+          "ixy": 0.0,
+          "ixz": 0.0,
+          "iyy": 0.02,
+          "iyz": 0.0,
+          "izz": 0.005
+        }
+      }
+    },
+    "right_forearm": {
+      "name": "right_forearm",
+      "type": "link",
+      "visual": {
+        "origin": {
+          "xyz": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "rpy": [
+            0.0,
+            1.57,
+            0.0
+          ]
+        },
+        "geometry": {
+          "type": "cylinder",
+          "radius": 0.06,
+          "length": 0.3
+        }
+      },
+      "collision": {
+        "origin": {
+          "xyz": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "rpy": [
+            0.0,
+            1.57,
+            0.0
+          ]
+        },
+        "geometry": {
+          "type": "cylinder",
+          "radius": 0.06,
+          "length": 0.3
+        }
+      },
+      "inertial": {
+        "origin": {
+          "xyz": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "rpy": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "mass": 1.0,
+        "inertia": {
+          "ixx": 0.01,
+          "ixy": 0.0,
+          "ixz": 0.0,
+          "iyy": 0.01,
+          "iyz": 0.0,
+          "izz": 0.003
+        }
+      }
+    },
+    "left_thigh": {
+      "name": "left_thigh",
+      "type": "link",
+      "visual": {
+        "origin": {
+          "xyz": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "rpy": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "geometry": {
+          "type": "cylinder",
+          "radius": 0.1,
+          "length": 0.5
+        }
+      },
+      "collision": {
+        "origin": {
+          "xyz": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "rpy": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "geometry": {
+          "type": "cylinder",
+          "radius": 0.1,
+          "length": 0.5
+        }
+      },
+      "inertial": {
+        "origin": {
+          "xyz": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "rpy": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "mass": 3.0,
+        "inertia": {
+          "ixx": 0.05,
+          "ixy": 0.0,
+          "ixz": 0.0,
+          "iyy": 0.05,
+          "iyz": 0.0,
+          "izz": 0.01
+        }
+      }
+    },
+    "left_shin": {
+      "name": "left_shin",
+      "type": "link",
+      "visual": {
+        "origin": {
+          "xyz": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "rpy": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "geometry": {
+          "type": "cylinder",
+          "radius": 0.08,
+          "length": 0.4
+        }
+      },
+      "collision": {
+        "origin": {
+          "xyz": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "rpy": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "geometry": {
+          "type": "cylinder",
+          "radius": 0.08,
+          "length": 0.4
+        }
+      },
+      "inertial": {
+        "origin": {
+          "xyz": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "rpy": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "mass": 2.0,
+        "inertia": {
+          "ixx": 0.03,
+          "ixy": 0.0,
+          "ixz": 0.0,
+          "iyy": 0.03,
+          "iyz": 0.0,
+          "izz": 0.005
+        }
+      }
+    },
+    "left_foot": {
+      "name": "left_foot",
+      "type": "link",
+      "visual": {
+        "origin": {
+          "xyz": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "rpy": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "geometry": {
+          "type": "box",
+          "size": [
+            0.15,
+            0.25,
+            0.08
+          ]
+        }
+      },
+      "collision": {
+        "origin": {
+          "xyz": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "rpy": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "geometry": {
+          "type": "box",
+          "size": [
+            0.15,
+            0.25,
+            0.08
+          ]
+        }
+      },
+      "inertial": {
+        "origin": {
+          "xyz": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "rpy": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "mass": 1.0,
+        "inertia": {
+          "ixx": 0.01,
+          "ixy": 0.0,
+          "ixz": 0.0,
+          "iyy": 0.01,
+          "iyz": 0.0,
+          "izz": 0.01
+        }
+      }
+    },
+    "right_thigh": {
+      "name": "right_thigh",
+      "type": "link",
+      "visual": {
+        "origin": {
+          "xyz": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "rpy": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "geometry": {
+          "type": "cylinder",
+          "radius": 0.1,
+          "length": 0.5
+        }
+      },
+      "collision": {
+        "origin": {
+          "xyz": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "rpy": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "geometry": {
+          "type": "cylinder",
+          "radius": 0.1,
+          "length": 0.5
+        }
+      },
+      "inertial": {
+        "origin": {
+          "xyz": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "rpy": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "mass": 3.0,
+        "inertia": {
+          "ixx": 0.05,
+          "ixy": 0.0,
+          "ixz": 0.0,
+          "iyy": 0.05,
+          "iyz": 0.0,
+          "izz": 0.01
+        }
+      }
+    },
+    "right_shin": {
+      "name": "right_shin",
+      "type": "link",
+      "visual": {
+        "origin": {
+          "xyz": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "rpy": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "geometry": {
+          "type": "cylinder",
+          "radius": 0.08,
+          "length": 0.4
+        }
+      },
+      "collision": {
+        "origin": {
+          "xyz": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "rpy": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "geometry": {
+          "type": "cylinder",
+          "radius": 0.08,
+          "length": 0.4
+        }
+      },
+      "inertial": {
+        "origin": {
+          "xyz": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "rpy": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "mass": 2.0,
+        "inertia": {
+          "ixx": 0.03,
+          "ixy": 0.0,
+          "ixz": 0.0,
+          "iyy": 0.03,
+          "iyz": 0.0,
+          "izz": 0.005
+        }
+      }
+    },
+    "right_foot": {
+      "name": "right_foot",
+      "type": "link",
+      "visual": {
+        "origin": {
+          "xyz": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "rpy": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "geometry": {
+          "type": "box",
+          "size": [
+            0.15,
+            0.25,
+            0.08
+          ]
+        }
+      },
+      "collision": {
+        "origin": {
+          "xyz": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "rpy": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "geometry": {
+          "type": "box",
+          "size": [
+            0.15,
+            0.25,
+            0.08
+          ]
+        }
+      },
+      "inertial": {
+        "origin": {
+          "xyz": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "rpy": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "mass": 1.0,
+        "inertia": {
+          "ixx": 0.01,
+          "ixy": 0.0,
+          "ixz": 0.0,
+          "iyy": 0.01,
+          "iyz": 0.0,
+          "izz": 0.01
+        }
+      }
+    }
+  },
+  "joints": {
+    "neck_joint": {
+      "name": "neck_joint",
+      "type": "revolute",
+      "parent": "base",
+      "child": "head",
+      "origin": {
+        "xyz": [
+          0.0,
+          0.0,
+          0.7
+        ],
+        "rpy": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "limits": {
+        "lower": -0.5,
+        "upper": 0.5,
+        "effort": 50.0,
+        "velocity": 2.0
+      }
+    },
+    "left_shoulder_joint": {
+      "name": "left_shoulder_joint",
+      "type": "revolute",
+      "parent": "base",
+      "child": "left_upper_arm",
+      "origin": {
+        "xyz": [
+          -0.3,
+          0.0,
+          0.3
+        ],
+        "rpy": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "axis": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "limits": {
+        "lower": -1.5,
+        "upper": 1.5,
+        "effort": 80.0,
+        "velocity": 3.0
+      }
+    },
+    "left_elbow_joint": {
+      "name": "left_elbow_joint",
+      "type": "revolute",
+      "parent": "left_upper_arm",
+      "child": "left_forearm",
+      "origin": {
+        "xyz": [
+          -0.4,
+          0.0,
+          0.0
+        ],
+        "rpy": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "axis": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "limits": {
+        "lower": -2.5,
+        "upper": 0.1,
+        "effort": 60.0,
+        "velocity": 3.0
+      }
+    },
+    "right_shoulder_joint": {
+      "name": "right_shoulder_joint",
+      "type": "revolute",
+      "parent": "base",
+      "child": "right_upper_arm",
+      "origin": {
+        "xyz": [
+          0.3,
+          0.0,
+          0.3
+        ],
+        "rpy": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "axis": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "limits": {
+        "lower": -1.5,
+        "upper": 1.5,
+        "effort": 80.0,
+        "velocity": 3.0
+      }
+    },
+    "right_elbow_joint": {
+      "name": "right_elbow_joint",
+      "type": "revolute",
+      "parent": "right_upper_arm",
+      "child": "right_forearm",
+      "origin": {
+        "xyz": [
+          0.4,
+          0.0,
+          0.0
+        ],
+        "rpy": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "axis": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "limits": {
+        "lower": -2.5,
+        "upper": 0.1,
+        "effort": 60.0,
+        "velocity": 3.0
+      }
+    },
+    "left_hip_joint": {
+      "name": "left_hip_joint",
+      "type": "revolute",
+      "parent": "base",
+      "child": "left_thigh",
+      "origin": {
+        "xyz": [
+          -0.15,
+          0.0,
+          -0.6
+        ],
+        "rpy": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "axis": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "limits": {
+        "lower": -1.0,
+        "upper": 1.0,
+        "effort": 150.0,
+        "velocity": 4.0
+      }
+    },
+    "left_knee_joint": {
+      "name": "left_knee_joint",
+      "type": "revolute",
+      "parent": "left_thigh",
+      "child": "left_shin",
+      "origin": {
+        "xyz": [
+          0.0,
+          0.0,
+          -0.5
+        ],
+        "rpy": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "axis": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "limits": {
+        "lower": -2.5,
+        "upper": 0.1,
+        "effort": 120.0,
+        "velocity": 4.0
+      }
+    },
+    "left_ankle_joint": {
+      "name": "left_ankle_joint",
+      "type": "revolute",
+      "parent": "left_shin",
+      "child": "left_foot",
+      "origin": {
+        "xyz": [
+          0.0,
+          0.05,
+          -0.4
+        ],
+        "rpy": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "axis": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "limits": {
+        "lower": -0.5,
+        "upper": 0.5,
+        "effort": 80.0,
+        "velocity": 3.0
+      }
+    },
+    "right_hip_joint": {
+      "name": "right_hip_joint",
+      "type": "revolute",
+      "parent": "base",
+      "child": "right_thigh",
+      "origin": {
+        "xyz": [
+          0.15,
+          0.0,
+          -0.6
+        ],
+        "rpy": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "axis": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "limits": {
+        "lower": -1.0,
+        "upper": 1.0,
+        "effort": 150.0,
+        "velocity": 4.0
+      }
+    },
+    "right_knee_joint": {
+      "name": "right_knee_joint",
+      "type": "revolute",
+      "parent": "right_thigh",
+      "child": "right_shin",
+      "origin": {
+        "xyz": [
+          0.0,
+          0.0,
+          -0.5
+        ],
+        "rpy": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "axis": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "limits": {
+        "lower": -2.5,
+        "upper": 0.1,
+        "effort": 120.0,
+        "velocity": 4.0
+      }
+    },
+    "right_ankle_joint": {
+      "name": "right_ankle_joint",
+      "type": "revolute",
+      "parent": "right_shin",
+      "child": "right_foot",
+      "origin": {
+        "xyz": [
+          0.0,
+          0.05,
+          -0.4
+        ],
+        "rpy": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "axis": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "limits": {
+        "lower": -0.5,
+        "upper": 0.5,
+        "effort": 80.0,
+        "velocity": 3.0
+      }
+    }
+  },
+  "hierarchy": {
+    "base": [
+      "head",
+      "left_upper_arm",
+      "right_upper_arm",
+      "left_thigh",
+      "right_thigh"
+    ],
+    "left_upper_arm": [
+      "left_forearm"
+    ],
+    "right_upper_arm": [
+      "right_forearm"
+    ],
+    "left_thigh": [
+      "left_shin"
+    ],
+    "left_shin": [
+      "left_foot"
+    ],
+    "right_thigh": [
+      "right_shin"
+    ],
+    "right_shin": [
+      "right_foot"
+    ]
+  }
+}
