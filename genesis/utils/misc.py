@@ -11,7 +11,7 @@ import sys
 import os
 from dataclasses import dataclass
 from collections import OrderedDict
-from typing import Any
+from typing import Any, Type
 
 import numpy as np
 import cpuinfo
@@ -57,6 +57,9 @@ class redirect_libc_stderr:
         self.stderr_fileno = None
         self.original_stderr_fileno = None
 
+    # --------------------------------------------------
+    # Enter: duplicate stderr → tmp, dup2(target) → stderr
+    # --------------------------------------------------
     def __enter__(self):
         self.stderr_fileno = sys.stderr.fileno()
         self.original_stderr_fileno = os.dup(self.stderr_fileno)
@@ -179,8 +182,8 @@ def get_device(backend: gs_backend):
             gs.raise_exception("torch cuda not available")
 
         device_idx = torch.cuda.current_device()
-        device = torch.device(f"cuda:{device_idx}")
-        device_property = torch.cuda.get_device_properties(device_idx)
+        device = torch.device("cuda", device_idx)
+        device_property = torch.cuda.get_device_properties(device)
         device_name = device_property.name
         total_mem = device_property.total_memory / 1024**3
 
@@ -190,14 +193,14 @@ def get_device(backend: gs_backend):
 
         # on mac, cpu and gpu are in the same device
         _, device_name, total_mem, _ = get_device(gs_backend.cpu)
-        device = torch.device("mps:0")
+        device = torch.device("mps", 0)
 
     elif backend == gs_backend.vulkan:
         if torch.cuda.is_available():
             device, device_name, total_mem, _ = get_device(gs_backend.cuda)
         elif torch.xpu.is_available():  # pytorch 2.5+ supports Intel XPU device
             device_idx = torch.xpu.current_device()
-            device = torch.device(f"xpu:{device_idx}")
+            device = torch.device("xpu", device_idx)
             device_property = torch.xpu.get_device_properties(device_idx)
             device_name = device_property.name
             total_mem = device_property.total_memory / 1024**3
@@ -302,12 +305,12 @@ def to_gs_tensor(x):
 
 def tensor_to_cpu(x):
     if isinstance(x, torch.Tensor):
-        x = x.cpu()
+        x = x.detach().cpu()
     return x
 
 
-def tensor_to_array(x):
-    return np.asarray(tensor_to_cpu(x))
+def tensor_to_array(x: torch.Tensor, dtype: Type[np.generic] | None = None) -> np.ndarray:
+    return np.asarray(tensor_to_cpu(x), dtype=dtype)
 
 
 def is_approx_multiple(a, b, tol=1e-7):
@@ -318,7 +321,7 @@ def is_approx_multiple(a, b, tol=1e-7):
 
 ALLOCATE_TENSOR_WARNING = (
     "Tensor had to be re-allocated because of incorrect dtype/device or non-contiguous memory. This may "
-    "dramatically impede performance if it occurs in the critical path of your application."
+    "impede performance if it occurs in the critical path of your application."
 )
 
 FIELD_CACHE: dict[int, "FieldMetadata"] = OrderedDict()
@@ -464,7 +467,7 @@ def ti_field_to_torch(
             if mask is None or isinstance(mask, slice):
                 # Slices are always valid by default. Nothing to check.
                 is_out_of_bounds = False
-            elif isinstance(mask, int):
+            elif isinstance(mask, (int, np.integer)):
                 # Do not allow negative indexing for consistency with Taichi
                 is_out_of_bounds = not (0 <= mask < _field_shape[i])
             elif isinstance(mask, torch.Tensor):
@@ -484,12 +487,12 @@ def ti_field_to_torch(
     # Must convert masks to torch if not slice or int since torch will do it anyway.
     # Note that being contiguous is not required and does not affect performance.
     must_allocate = False
-    is_row_mask_tensor = not (row_mask is None or isinstance(row_mask, (slice, int)))
+    is_row_mask_tensor = not (row_mask is None or isinstance(row_mask, (slice, int, np.integer)))
     if is_row_mask_tensor:
         _row_mask = torch.as_tensor(row_mask, dtype=gs.tc_int, device=gs.device)
         must_allocate = _row_mask is not row_mask
         row_mask = _row_mask
-    is_col_mask_tensor = not (col_mask is None or isinstance(col_mask, (slice, int)))
+    is_col_mask_tensor = not (col_mask is None or isinstance(col_mask, (slice, int, np.integer)))
     if is_col_mask_tensor:
         _col_mask = torch.as_tensor(col_mask, dtype=gs.tc_int, device=gs.device)
         must_allocate = _col_mask is not col_mask
@@ -529,8 +532,8 @@ def ti_field_to_torch(
     # Extract slice if necessary.
     # Note that unsqueeze is MUCH faster than indexing with `[row_mask]` to keep batch dimensions,
     # because this required allocating GPU data.
-    is_single_col = (is_col_mask_tensor and col_mask.ndim == 0) or isinstance(col_mask, int)
-    is_single_row = (is_row_mask_tensor and row_mask.ndim == 0) or isinstance(row_mask, int)
+    is_single_col = (is_col_mask_tensor and col_mask.ndim == 0) or isinstance(col_mask, (int, np.integer))
+    is_single_row = (is_row_mask_tensor and row_mask.ndim == 0) or isinstance(row_mask, (int, np.integer))
     try:
         if is_col_mask_tensor and is_row_mask_tensor:
             if not is_single_col and not is_single_row:
