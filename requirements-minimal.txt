@@ -1,10 +1,34 @@
-# Minimal requirements for basic functionality
-# This is a subset of requirements.txt for initial setup
+# Minimal requirements for quick testing
+# For full installation, use: pip install -r requirements.txt
 
+# Core dependencies (install first)
+numpy>=1.26.4
+scipy>=1.7.0
 torch>=2.0.0
-numpy>=1.21.0
-taichi>=1.7.0  # Required for Genesis
-gymnasium>=0.28.0
-websockets>=11.0.0
-aiohttp>=3.8.0
+
+# Build dependencies
+cython>=3.0.0
+
+# Genesis prerequisites (install before genesis-world)
+trimesh>=3.9.0
+Pillow>=8.0.0
+pyyaml>=5.4.0
+py-cpuinfo>=9.0.0
+psutil>=7.0.0
+taichi>=1.7.0
+
+# Genesis and physics
+genesis-world>=0.2.1
+
+# Essential graphics
+PyOpenGL>=3.1.9
+pyglet>=2.1.6
+
+# Basic utilities
+click>=8.0.0
+rich>=10.0.0
 tqdm>=4.62.0
+
+# Development
+pytest>=6.0.0
+black>=21.0.0
