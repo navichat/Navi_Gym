@@ -39,8 +39,8 @@ print_header() {
 # Runner configurations
 X64_RUNNER_NAME="navi-gym-runner-$(hostname)"
 ARM64_RUNNER_NAME="navi-gym-runner-arm64-$(hostname)"
-X64_SERVICE="actions.runner.navichat-Navi_Gym.$X64_RUNNER_NAME.service"
-ARM64_SERVICE="actions.runner.navichat-Navi_Gym.$ARM64_RUNNER_NAME.service"
+X64_SERVICE="actions.runner.navichat.navi-gym-runner-$(hostname).service"
+ARM64_SERVICE="actions.runner.navichat.navi-gym-runner-arm64-$(hostname).service"
 
 # Function to check if Docker is available
 check_docker() {
