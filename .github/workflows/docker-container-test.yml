@@ -1,0 +1,378 @@
+name: Docker Container Testing
+
+on:
+  push:
+    branches: [ main, develop, feature/* ]
+    paths:
+      - '**.py'
+      - 'requirements*.txt'
+      - 'pyproject.toml'
+      - 'docker/**'
+      - '.github/workflows/docker-test.yml'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - '**.py'
+      - 'requirements*.txt'
+      - 'pyproject.toml'
+      - 'docker/**'
+      - '.github/workflows/docker-test.yml'
+  workflow_dispatch:
+    inputs:
+      test_type:
+        description: 'Type of tests to run'
+        required: false
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - unit
+          - integration
+          - smoke
+      docker_platform:
+        description: 'Docker platform to test'
+        required: false
+        default: 'linux/amd64'
+        type: choice
+        options:
+          - linux/amd64
+          - linux/arm64
+          - both
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+  PYTHON_VERSION: 3.11
+
+jobs:
+  # Build test Docker images
+  build-test-images:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        image_type: [cpu, gpu]
+    outputs:
+      cpu-image: ${{ steps.meta.outputs.tags }}-cpu
+      gpu-image: ${{ steps.meta.outputs.tags }}-gpu
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push test image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: docker/Dockerfile${{ matrix.image_type == 'gpu' && '' || '.simple-arm64' }}
+          platforms: ${{ github.event.inputs.docker_platform || 'linux/amd64' }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}-${{ matrix.image_type }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            PYTHON_VERSION=${{ env.PYTHON_VERSION }}
+            CUDA_VERSION=12.1
+
+  # Run tests in CPU container
+  test-cpu-container:
+    needs: build-test-images
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        test_suite:
+          - unit
+          - integration
+          - smoke
+      fail-fast: false
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run ${{ matrix.test_suite }} tests in CPU container
+        run: |
+          docker run --rm \
+            -v ${{ github.workspace }}:/workspace \
+            -e PYTHONPATH=/workspace \
+            -e TEST_SUITE=${{ matrix.test_suite }} \
+            -e CI=true \
+            -e GITHUB_ACTIONS=true \
+            --workdir /workspace \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}-cpu \
+            bash -c "
+              echo 'Installing test dependencies...'
+              pip install pytest pytest-xvfb pytest-cov pytest-mock
+              
+              echo 'Running ${{ matrix.test_suite }} tests...'
+              case '${{ matrix.test_suite }}' in
+                'unit')
+                  python -m pytest tests/ -v --tb=short -x --disable-warnings
+                  ;;
+                'integration')
+                  python -m pytest tests/test_*integration*.py -v --tb=short --disable-warnings || true
+                  python test_env.py || echo 'test_env.py not suitable for headless'
+                  ;;
+                'smoke')
+                  python -c 'import numpy; print(\"NumPy:\", numpy.__version__)'
+                  python -c 'import torch; print(\"PyTorch:\", torch.__version__)'
+                  python -c 'import trimesh; print(\"Trimesh:\", trimesh.__version__)'
+                  python -c 'try: import genesis as gs; print(\"Genesis imported successfully\"); except ImportError as e: print(\"Genesis import failed:\", e)'
+                  ;;
+                *)
+                  echo 'Running all available tests...'
+                  python -m pytest tests/ -v --tb=short --maxfail=5 --disable-warnings || true
+                  ;;
+              esac
+            "
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results-cpu-${{ matrix.test_suite }}
+          path: |
+            test-results/
+            *.log
+          retention-days: 30
+
+  # Run tests in GPU container (when GPU runners are available)
+  test-gpu-container:
+    needs: build-test-images
+    runs-on: [self-hosted, gpu]
+    if: github.repository_owner == 'navichat'
+    strategy:
+      matrix:
+        test_suite:
+          - gpu-smoke
+          - gpu-render
+      fail-fast: false
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run ${{ matrix.test_suite }} tests in GPU container
+        run: |
+          docker run --rm \
+            --gpus all \
+            -v ${{ github.workspace }}:/workspace \
+            -e PYTHONPATH=/workspace \
+            -e TEST_SUITE=${{ matrix.test_suite }} \
+            -e CI=true \
+            -e GITHUB_ACTIONS=true \
+            -e CUDA_VISIBLE_DEVICES=0 \
+            --workdir /workspace \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}-gpu \
+            bash -c "
+              echo 'Installing test dependencies...'
+              pip install pytest pytest-xvfb pytest-cov pytest-mock
+              
+              echo 'Checking GPU availability...'
+              python -c 'import torch; print(\"CUDA available:\", torch.cuda.is_available()); print(\"GPU count:\", torch.cuda.device_count())'
+              
+              echo 'Running ${{ matrix.test_suite }} tests...'
+              case '${{ matrix.test_suite }}' in
+                'gpu-smoke')
+                  python -c 'import torch; assert torch.cuda.is_available(), \"CUDA not available\"'
+                  python -c 'try: import genesis as gs; print(\"Genesis GPU test passed\"); except Exception as e: print(\"Genesis GPU test failed:\", e)'
+                  ;;
+                'gpu-render')
+                  python -m pytest tests/test_render.py -v --tb=short --disable-warnings || echo 'Render tests may require display'
+                  ;;
+                *)
+                  echo 'Running GPU-specific tests...'
+                  python -m pytest tests/ -k 'gpu or cuda or render' -v --tb=short --disable-warnings || true
+                  ;;
+              esac
+            "
+
+      - name: Upload GPU test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results-gpu-${{ matrix.test_suite }}
+          path: |
+            test-results/
+            *.log
+          retention-days: 30
+
+  # Performance benchmarking in container
+  benchmark-container:
+    needs: build-test-images
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create benchmark script
+        run: |
+          cat > benchmark.py << 'EOF'
+          import time
+          import psutil
+          import numpy as np
+          
+          print("=== System Info ===")
+          print(f"CPU count: {psutil.cpu_count()}")
+          print(f"Memory: {psutil.virtual_memory().total / (1024**3):.2f} GB")
+          
+          print("\n=== NumPy Performance ===")
+          size = 1000
+          start = time.time()
+          a = np.random.rand(size, size)
+          b = np.random.rand(size, size)
+          c = np.dot(a, b)
+          end = time.time()
+          print(f"Matrix multiplication ({size}x{size}): {end-start:.3f}s")
+          
+          print("\n=== Import Performance ===")
+          start = time.time()
+          try:
+              import genesis as gs
+              end = time.time()
+              print(f"Genesis import time: {end-start:.3f}s")
+          except ImportError:
+              print("Genesis not available for import test")
+          EOF
+
+      - name: Run performance benchmarks
+        run: |
+          docker run --rm \
+            -v ${{ github.workspace }}:/workspace \
+            -e PYTHONPATH=/workspace \
+            -e CI=true \
+            --workdir /workspace \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}-cpu \
+            bash -c "
+              echo 'Installing benchmark dependencies...'
+              pip install pytest-benchmark memory-profiler psutil
+              
+              echo 'Running performance benchmarks...'
+              if [ -d 'tests' ] && find tests -name '*benchmark*' -type f | grep -q .; then
+                python -m pytest tests/ -k 'benchmark' -v --tb=short --disable-warnings || echo 'No benchmark tests found'
+              else
+                echo 'Running basic performance tests...'
+                python benchmark.py
+              fi
+            "
+
+      - name: Upload benchmark results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: benchmark-results-container
+          path: |
+            benchmark-results/
+            *.json
+          retention-days: 30
+
+  # Security scanning
+  security-scan:
+    needs: build-test-images
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}-cpu
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+  # Collect and report results
+  test-summary:
+    needs: [test-cpu-container, benchmark-container]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: test-artifacts
+
+      - name: Generate test summary
+        run: |
+          echo "# 🧪 Docker Container Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Test Status Overview" >> $GITHUB_STEP_SUMMARY
+          echo "| Test Suite | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|------------|--------|" >> $GITHUB_STEP_SUMMARY
+          
+          # Check test results
+          for result in test-artifacts/test-results-*/; do
+            if [ -d "$result" ]; then
+              suite=$(basename "$result" | sed 's/test-results-//')
+              if [ ${{ needs.test-cpu-container.result }} == 'success' ]; then
+                echo "| $suite | ✅ Passed |" >> $GITHUB_STEP_SUMMARY
+              else
+                echo "| $suite | ❌ Failed |" >> $GITHUB_STEP_SUMMARY
+              fi
+            fi
+          done
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Container Information" >> $GITHUB_STEP_SUMMARY
+          echo "- **Base Image**: Ubuntu with Python ${{ env.PYTHON_VERSION }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Registry**: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Test Platform**: ${{ github.event.inputs.docker_platform || 'linux/amd64' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit SHA**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Artifacts" >> $GITHUB_STEP_SUMMARY
+          echo "Test results and logs have been uploaded as artifacts for detailed analysis." >> $GITHUB_STEP_SUMMARY

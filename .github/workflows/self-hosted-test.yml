@@ -1,0 +1,246 @@
+name: Self-Hosted Runner Test
+
+on:
+  workflow_dispatch:
+    inputs:
+      test_type:
+        description: 'Type of test to run'
+        required: false
+        default: 'basic'
+        type: choice
+        options:
+          - basic
+          - docker
+          - gpu
+          - full
+  push:
+    branches: [ main ]
+    paths:
+      - '.github/workflows/self-hosted-test.yml'
+
+jobs:
+  # Test the self-hosted runner
+  test-self-hosted:
+    runs-on: self-hosted
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: System information
+        run: |
+          echo "## 🖥️ Runner System Information" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Property | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Hostname | $(hostname) |" >> $GITHUB_STEP_SUMMARY
+          echo "| OS | $(cat /etc/os-release | grep PRETTY_NAME | cut -d'=' -f2 | tr -d '\"') |" >> $GITHUB_STEP_SUMMARY
+          echo "| Kernel | $(uname -r) |" >> $GITHUB_STEP_SUMMARY
+          echo "| Architecture | $(uname -m) |" >> $GITHUB_STEP_SUMMARY
+          echo "| CPU | $(nproc) cores |" >> $GITHUB_STEP_SUMMARY
+          echo "| Memory | $(free -h | awk 'NR==2{print $2}') |" >> $GITHUB_STEP_SUMMARY
+          echo "| Disk Space | $(df -h / | awk 'NR==2{print $4}') available |" >> $GITHUB_STEP_SUMMARY
+          echo "| Docker | $(docker --version 2>/dev/null || echo 'Not available') |" >> $GITHUB_STEP_SUMMARY
+
+      - name: Check Python environment
+        run: |
+          echo "## 🐍 Python Environment" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Component | Version |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----------|---------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Python | $(python3 --version 2>/dev/null || echo 'Not available') |" >> $GITHUB_STEP_SUMMARY
+          echo "| pip | $(pip3 --version 2>/dev/null || echo 'Not available') |" >> $GITHUB_STEP_SUMMARY
+          
+          if command -v python3 &> /dev/null; then
+            echo "| NumPy | $(python3 -c 'import numpy; print(numpy.__version__)' 2>/dev/null || echo 'Not installed') |" >> $GITHUB_STEP_SUMMARY
+            echo "| PyTorch | $(python3 -c 'import torch; print(torch.__version__)' 2>/dev/null || echo 'Not installed') |" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Test Docker functionality
+        if: github.event.inputs.test_type == 'docker' || github.event.inputs.test_type == 'full'
+        run: |
+          echo "## 🐳 Docker Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if command -v docker &> /dev/null; then
+            echo "✅ Docker is available" >> $GITHUB_STEP_SUMMARY
+            
+            # Test Docker with a simple container
+            if docker run --rm hello-world > /dev/null 2>&1; then
+              echo "✅ Docker containers can run successfully" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "❌ Docker container execution failed" >> $GITHUB_STEP_SUMMARY
+            fi
+            
+            # Test building from project Dockerfile
+            if [ -f docker/Dockerfile ]; then
+              echo "🔨 Testing project Dockerfile build..." >> $GITHUB_STEP_SUMMARY
+              if timeout 300 docker build -f docker/Dockerfile -t navi-gym-test . > build.log 2>&1; then
+                echo "✅ Project Docker image builds successfully" >> $GITHUB_STEP_SUMMARY
+              else
+                echo "❌ Project Docker image build failed" >> $GITHUB_STEP_SUMMARY
+                echo "<details><summary>Build log</summary>" >> $GITHUB_STEP_SUMMARY
+                echo "" >> $GITHUB_STEP_SUMMARY
+                echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+                tail -20 build.log >> $GITHUB_STEP_SUMMARY
+                echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+                echo "</details>" >> $GITHUB_STEP_SUMMARY
+              fi
+            else
+              echo "⚠️ No Dockerfile found at docker/Dockerfile" >> $GITHUB_STEP_SUMMARY
+            fi
+          else
+            echo "❌ Docker is not available" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Test GPU availability
+        if: github.event.inputs.test_type == 'gpu' || github.event.inputs.test_type == 'full'
+        run: |
+          echo "## 🎮 GPU Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Check for NVIDIA GPU
+          if command -v nvidia-smi &> /dev/null; then
+            echo "✅ NVIDIA GPU detected:" >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+            nvidia-smi --query-gpu=name,memory.total,driver_version --format=csv,noheader,nounits >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+            
+            # Test CUDA with PyTorch if available
+            if python3 -c "import torch" 2>/dev/null; then
+              CUDA_AVAILABLE=$(python3 -c "import torch; print(torch.cuda.is_available())" 2>/dev/null)
+              if [ "$CUDA_AVAILABLE" = "True" ]; then
+                echo "✅ CUDA is available in PyTorch" >> $GITHUB_STEP_SUMMARY
+                GPU_COUNT=$(python3 -c "import torch; print(torch.cuda.device_count())" 2>/dev/null)
+                echo "📊 GPU count: $GPU_COUNT" >> $GITHUB_STEP_SUMMARY
+              else
+                echo "❌ CUDA is not available in PyTorch" >> $GITHUB_STEP_SUMMARY
+              fi
+            else
+              echo "⚠️ PyTorch not available for CUDA testing" >> $GITHUB_STEP_SUMMARY
+            fi
+          else
+            echo "❌ No NVIDIA GPU detected" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Run project tests
+        if: github.event.inputs.test_type == 'full'
+        run: |
+          echo "## 🧪 Project Tests" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Test if we can import main modules
+          if python3 -c "import sys; sys.path.append('.'); import numpy; print('NumPy OK')" 2>/dev/null; then
+            echo "✅ Basic Python imports work" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Basic Python imports failed" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          # Run pytest if available and tests exist
+          if command -v pytest &> /dev/null && [ -d tests ]; then
+            echo "🧪 Running pytest..." >> $GITHUB_STEP_SUMMARY
+            if timeout 120 pytest tests/ --tb=short -q > test_output.log 2>&1; then
+              echo "✅ Tests passed" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "❌ Some tests failed" >> $GITHUB_STEP_SUMMARY
+              echo "<details><summary>Test output</summary>" >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+              echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+              tail -20 test_output.log >> $GITHUB_STEP_SUMMARY
+              echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+              echo "</details>" >> $GITHUB_STEP_SUMMARY
+            fi
+          else
+            echo "⚠️ pytest not available or no tests directory" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Test Docker-based workflow
+        if: github.event.inputs.test_type == 'docker' || github.event.inputs.test_type == 'full'
+        run: |
+          if command -v docker &> /dev/null && [ -f docker/Dockerfile ]; then
+            echo "🐳 Testing containerized workflow..."
+            
+            # Build and run a simple test in the container
+            docker build -f docker/Dockerfile -t navi-gym-runner-test . && \
+            docker run --rm \
+              -v $(pwd):/workspace \
+              -e PYTHONPATH=/workspace \
+              --workdir /workspace \
+              navi-gym-runner-test \
+              python3 -c "
+import sys
+print(f'Python version: {sys.version}')
+try:
+    import numpy
+    print(f'NumPy: {numpy.__version__}')
+except ImportError:
+    print('NumPy: Not available')
+try:
+    import torch
+    print(f'PyTorch: {torch.__version__}')
+    print(f'CUDA available: {torch.cuda.is_available()}')
+except ImportError:
+    print('PyTorch: Not available')
+print('Container test completed successfully!')
+              " && echo "✅ Docker workflow test passed" || echo "❌ Docker workflow test failed"
+          fi
+
+      - name: Cleanup
+        if: always()
+        run: |
+          # Clean up any test artifacts
+          rm -f build.log test_output.log
+          
+          # Clean up Docker images if they exist
+          if command -v docker &> /dev/null; then
+            docker system prune -f > /dev/null 2>&1 || true
+          fi
+          
+          echo "🧹 Cleanup completed"
+
+  # Test on GitHub-hosted runner for comparison
+  test-github-hosted:
+    runs-on: ubuntu-latest
+    if: github.event.inputs.test_type == 'full'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Compare environments
+        run: |
+          echo "## 🌐 GitHub-hosted vs Self-hosted Comparison" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Property | GitHub-hosted |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|---------------|" >> $GITHUB_STEP_SUMMARY
+          echo "| OS | $(cat /etc/os-release | grep PRETTY_NAME | cut -d'=' -f2 | tr -d '\"') |" >> $GITHUB_STEP_SUMMARY
+          echo "| CPU | $(nproc) cores |" >> $GITHUB_STEP_SUMMARY
+          echo "| Memory | $(free -h | awk 'NR==2{print $2}') |" >> $GITHUB_STEP_SUMMARY
+          echo "| Python | $(python3 --version) |" >> $GITHUB_STEP_SUMMARY
+          echo "| Docker | $(docker --version) |" >> $GITHUB_STEP_SUMMARY
+
+  # Summary job
+  test-complete:
+    needs: [test-self-hosted]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Test completion summary
+        run: |
+          echo "# 🏁 Self-Hosted Runner Test Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "${{ needs.test-self-hosted.result }}" = "success" ]; then
+            echo "## ✅ Test Result: SUCCESS" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Your self-hosted runner is working correctly!" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "## ❌ Test Result: FAILURE" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "There were issues with your self-hosted runner. Check the logs above for details." >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## 📋 Test Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- **Test Type**: ${{ github.event.inputs.test_type || 'basic' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Triggered By**: ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Repository**: ${{ github.repository }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY

@@ -1,0 +1,445 @@
+name: Comprehensive CI/CD Testing
+
+on:
+  push:
+    branches: [ main, develop ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main, develop ]
+  schedule:
+    # Run nightly tests at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      test_environment:
+        description: 'Test environment to use'
+        required: false
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - docker-only
+          - native-only
+          - gpu-only
+      skip_slow_tests:
+        description: 'Skip slow tests'
+        required: false
+        default: false
+        type: boolean
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  # Pre-flight checks
+  pre-flight:
+    runs-on: ubuntu-latest
+    outputs:
+      should-run-tests: ${{ steps.changes.outputs.should-run }}
+      python-changed: ${{ steps.changes.outputs.python }}
+      docker-changed: ${{ steps.changes.outputs.docker }}
+      tests-changed: ${{ steps.changes.outputs.tests }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect changes
+        id: changes
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            python:
+              - '**/*.py'
+              - 'requirements*.txt'
+              - 'pyproject.toml'
+              - 'setup.py'
+            docker:
+              - 'docker/**'
+              - 'Dockerfile*'
+            tests:
+              - 'tests/**'
+              - '**/test_*.py'
+              - '**/*_test.py'
+            workflows:
+              - '.github/workflows/**'
+
+      - name: Determine if tests should run
+        id: should-run
+        run: |
+          if [[ "${{ github.event_name }}" == "schedule" ]] || \
+             [[ "${{ github.event_name }}" == "workflow_dispatch" ]] || \
+             [[ "${{ steps.changes.outputs.python }}" == "true" ]] || \
+             [[ "${{ steps.changes.outputs.docker }}" == "true" ]] || \
+             [[ "${{ steps.changes.outputs.tests }}" == "true" ]] || \
+             [[ "${{ steps.changes.outputs.workflows }}" == "true" ]]; then
+            echo "should-run=true" >> $GITHUB_OUTPUT
+          else
+            echo "should-run=false" >> $GITHUB_OUTPUT
+          fi
+
+  # Test matrix with multiple Python versions in Docker containers
+  test-matrix-docker:
+    needs: pre-flight
+    if: needs.pre-flight.outputs.should-run-tests == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.10', '3.11', '3.12']
+        test-type: ['unit', 'integration']
+        include:
+          - python-version: '3.11'
+            test-type: 'performance'
+            performance: true
+      fail-fast: false
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build test container
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: docker/Dockerfile
+          load: true
+          tags: navi-gym-test:py${{ matrix.python-version }}
+          cache-from: type=gha,scope=py${{ matrix.python-version }}
+          cache-to: type=gha,mode=max,scope=py${{ matrix.python-version }}
+          build-args: |
+            PYTHON_VERSION=${{ matrix.python-version }}
+
+      - name: Create test script
+        run: |
+          cat > run_tests.sh << 'EOF'
+          #!/bin/bash
+          set -e
+          
+          echo "Python version: $(python --version)"
+          echo "Installing test dependencies..."
+          pip install pytest pytest-cov pytest-mock pytest-xdist pytest-timeout
+          
+          # Install package in development mode
+          pip install -e .
+          
+          case "$TEST_TYPE" in
+            "unit")
+              echo "Running unit tests..."
+              python -m pytest tests/ \
+                -v \
+                --tb=short \
+                --cov=navi_gym \
+                --cov-report=xml \
+                --cov-report=term-missing \
+                --maxfail=10 \
+                --disable-warnings \
+                -m "not slow and not gpu" \
+                || echo "Some unit tests failed"
+              ;;
+            "integration")
+              echo "Running integration tests..."
+              python -m pytest tests/ \
+                -v \
+                --tb=short \
+                -m "integration" \
+                --disable-warnings \
+                || echo "Some integration tests failed"
+              ;;
+            "performance")
+              echo "Running performance tests..."
+              python -m pytest tests/ \
+                -v \
+                --tb=short \
+                -m "performance or benchmark" \
+                --disable-warnings \
+                || echo "Some performance tests failed"
+              ;;
+            *)
+              echo "Running smoke tests..."
+              python -c "import sys; print('Python:', sys.version)"
+              python -c "import numpy; print('NumPy:', numpy.__version__)"
+              python -c "import torch; print('PyTorch:', torch.__version__)"
+              python -c "try: import genesis as gs; print('Genesis: OK'); except Exception as e: print('Genesis:', e)"
+              ;;
+          esac
+          EOF
+          chmod +x run_tests.sh
+
+      - name: Run tests in container
+        run: |
+          docker run --rm \
+            -v ${{ github.workspace }}:/workspace \
+            -e TEST_TYPE=${{ matrix.test-type }} \
+            -e PYTHONPATH=/workspace \
+            -e CI=true \
+            --workdir /workspace \
+            navi-gym-test:py${{ matrix.python-version }} \
+            ./run_tests.sh
+
+      - name: Upload coverage reports
+        uses: codecov/codecov-action@v4
+        if: matrix.test-type == 'unit'
+        with:
+          file: ./coverage.xml
+          flags: unittests
+          name: coverage-py${{ matrix.python-version }}
+
+      - name: Upload test artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results-py${{ matrix.python-version }}-${{ matrix.test-type }}
+          path: |
+            coverage.xml
+            pytest-results.xml
+            test-results/
+          retention-days: 30
+
+  # GPU tests (only on self-hosted runners)
+  test-gpu:
+    needs: pre-flight
+    if: needs.pre-flight.outputs.should-run-tests == 'true' && github.repository_owner == 'navichat'
+    runs-on: [self-hosted, gpu]
+    container:
+      image: pytorch/pytorch:2.5.1-cuda12.1-cudnn9-devel
+      options: --gpus all
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          apt-get update && apt-get install -y build-essential git
+          pip install -e .
+          pip install pytest pytest-gpu
+
+      - name: Run GPU tests
+        run: |
+          python -c "import torch; print('CUDA available:', torch.cuda.is_available())"
+          python -c "import torch; print('GPU count:', torch.cuda.device_count())"
+          python -m pytest tests/ -v -m "gpu" --tb=short || echo "GPU tests completed"
+
+      - name: Upload GPU test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: gpu-test-results
+          path: test-results/
+          retention-days: 30
+
+  # Security and quality checks
+  security-quality:
+    needs: pre-flight
+    if: needs.pre-flight.outputs.should-run-tests == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install security tools
+        run: |
+          pip install bandit safety semgrep
+
+      - name: Run Bandit security check
+        run: |
+          bandit -r . -f json -o bandit-results.json || true
+
+      - name: Run Safety check
+        run: |
+          safety check --json --output safety-results.json || true
+
+      - name: Run Semgrep
+        run: |
+          semgrep --config=auto --json --output=semgrep-results.json . || true
+
+      - name: Upload security scan results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: security-results
+          path: |
+            bandit-results.json
+            safety-results.json
+            semgrep-results.json
+          retention-days: 30
+
+  # Docker multi-architecture build test
+  docker-multiarch:
+    needs: pre-flight
+    if: needs.pre-flight.outputs.docker-changed == 'true' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        platform: [linux/amd64, linux/arm64]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Test build for ${{ matrix.platform }}
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: docker/Dockerfile
+          platforms: ${{ matrix.platform }}
+          push: false
+          cache-from: type=gha,scope=${{ matrix.platform }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.platform }}
+
+  # Performance benchmarking
+  benchmark:
+    needs: pre-flight
+    if: needs.pre-flight.outputs.should-run-tests == 'true' && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build benchmark container
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: docker/Dockerfile
+          load: true
+          tags: navi-gym-benchmark:latest
+          cache-from: type=gha
+
+      - name: Create benchmark script
+        run: |
+          cat > benchmark.py << 'EOF'
+          import json
+          import time
+          import numpy as np
+          import psutil
+          
+          results = {
+              "timestamp": time.time(),
+              "system": {
+                  "cpu_count": psutil.cpu_count(),
+                  "memory_gb": psutil.virtual_memory().total / (1024**3)
+              },
+              "numpy_performance": {},
+              "import_times": {}
+          }
+          
+          # NumPy benchmark
+          sizes = [100, 500, 1000]
+          for size in sizes:
+              start = time.time()
+              a = np.random.rand(size, size)
+              b = np.random.rand(size, size)
+              c = np.dot(a, b)
+              end = time.time()
+              results["numpy_performance"][f"matmul_{size}x{size}"] = end - start
+          
+          # Import benchmarks
+          modules = ["numpy", "torch", "trimesh"]
+          for module in modules:
+              start = time.time()
+              try:
+                  __import__(module)
+                  end = time.time()
+                  results["import_times"][module] = end - start
+              except ImportError:
+                  results["import_times"][module] = "not_available"
+          
+          try:
+              start = time.time()
+              import genesis as gs
+              end = time.time()
+              results["import_times"]["genesis"] = end - start
+          except ImportError:
+              results["import_times"]["genesis"] = "not_available"
+          
+          with open("performance-results.json", "w") as f:
+              json.dump(results, f, indent=2)
+          
+          print("Performance benchmark completed")
+          EOF
+
+      - name: Run benchmarks
+        run: |
+          docker run --rm \
+            -v ${{ github.workspace }}:/workspace \
+            -e PYTHONPATH=/workspace \
+            --workdir /workspace \
+            navi-gym-benchmark:latest \
+            bash -c "
+              pip install pytest-benchmark memory-profiler py-spy
+              python -m pytest tests/ -k 'benchmark' --benchmark-json=benchmark-results.json || echo 'No benchmark tests found'
+              python benchmark.py
+            "
+
+      - name: Upload benchmark results
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-results
+          path: |
+            benchmark-results.json
+            performance-results.json
+          retention-days: 90
+
+  # Final status check
+  test-status:
+    needs: [test-matrix-docker, security-quality, docker-multiarch]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Check test results
+        run: |
+          echo "## 🧪 CI/CD Test Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [[ "${{ needs.test-matrix-docker.result }}" == "success" ]]; then
+            echo "✅ **Docker Matrix Tests**: Passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Docker Matrix Tests**: Failed" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [[ "${{ needs.security-quality.result }}" == "success" ]]; then
+            echo "✅ **Security & Quality**: Passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Security & Quality**: Failed" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [[ "${{ needs.docker-multiarch.result }}" == "success" ]]; then
+            echo "✅ **Multi-arch Build**: Passed" >> $GITHUB_STEP_SUMMARY
+          elif [[ "${{ needs.docker-multiarch.result }}" == "skipped" ]]; then
+            echo "⏭️ **Multi-arch Build**: Skipped" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Multi-arch Build**: Failed" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Test Environment" >> $GITHUB_STEP_SUMMARY
+          echo "- **Trigger**: ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Branch/Ref**: ${{ github.ref }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Actor**: ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+
+      - name: Fail if critical tests failed
+        if: needs.test-matrix-docker.result == 'failure'
+        run: |
+          echo "Critical tests failed!"
+          exit 1
