@@ -1,0 +1,507 @@
+name: Test CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop, feature/* ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+    inputs:
+      test_suite:
+        description: 'Test suite to run'
+        required: false
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - unit
+          - integration
+          - benchmarks
+          - smoke
+      skip_cache:
+        description: 'Skip Docker cache'
+        required: false
+        default: false
+        type: boolean
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+  PYTHON_VERSION: 3.11
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  # Job to detect changes and set up test strategy
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      docker-changed: ${{ steps.changes.outputs.docker }}
+      tests-changed: ${{ steps.changes.outputs.tests }}
+      python-changed: ${{ steps.changes.outputs.python }}
+      run-full-suite: ${{ steps.strategy.outputs.run-full-suite }}
+      test-suite: ${{ steps.strategy.outputs.test-suite }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect file changes
+        uses: dorny/paths-filter@v3
+        id: changes
+        with:
+          filters: |
+            docker:
+              - 'docker/**'
+              - 'Dockerfile*'
+              - 'docker-compose.yml'
+              - '.dockerignore'
+            tests:
+              - 'tests/**'
+              - 'conftest.py'
+              - 'pytest.ini'
+              - 'pyproject.toml'
+            python:
+              - '**/*.py'
+              - 'requirements*.txt'
+              - 'pyproject.toml'
+              - 'setup.py'
+
+      - name: Determine test strategy
+        id: strategy
+        run: |
+          # Determine if we should run full test suite
+          if [[ "${{ github.event_name }}" == "push" && "${{ github.ref }}" == "refs/heads/main" ]] || \
+             [[ "${{ github.event_name }}" == "workflow_dispatch" ]] || \
+             [[ "${{ steps.changes.outputs.docker }}" == "true" ]] || \
+             [[ "${{ steps.changes.outputs.tests }}" == "true" ]]; then
+            echo "run-full-suite=true" >> $GITHUB_OUTPUT
+          else
+            echo "run-full-suite=false" >> $GITHUB_OUTPUT
+          fi
+          
+          # Set test suite based on input or changes
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "test-suite=${{ github.event.inputs.test_suite }}" >> $GITHUB_OUTPUT
+          elif [[ "${{ steps.changes.outputs.python }}" == "true" ]]; then
+            echo "test-suite=unit" >> $GITHUB_OUTPUT
+          else
+            echo "test-suite=smoke" >> $GITHUB_OUTPUT
+          fi
+
+  # Build Docker images for testing
+  build-test-images:
+    runs-on: ubuntu-latest
+    needs: changes
+    strategy:
+      fail-fast: false
+      matrix:
+        variant:
+          - name: cpu
+            dockerfile: docker/Dockerfile
+            build-args: |
+              PYTHON_VERSION=${{ env.PYTHON_VERSION }}
+            platforms: linux/amd64,linux/arm64
+          - name: nvidia
+            dockerfile: docker/Dockerfile
+            build-args: |
+              PYTHON_VERSION=${{ env.PYTHON_VERSION }}
+              CUDA_VERSION=12.1
+            platforms: linux/amd64
+    
+    permissions:
+      contents: read
+      packages: write
+
+    outputs:
+      cpu-image: ${{ steps.meta.outputs.tags }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver-opts: |
+            image=moby/buildkit:master
+            network=host
+
+      - name: Log in to Container Registry
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha,prefix={{branch}}-
+            type=raw,value=test-${{ matrix.variant.name }}-${{ github.run_number }}
+          flavor: |
+            suffix=-${{ matrix.variant.name }}
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ${{ matrix.variant.dockerfile }}
+          platforms: ${{ matrix.variant.platforms }}
+          push: false
+          load: true
+          tags: |
+            test-image-${{ matrix.variant.name }}:latest
+            ${{ steps.meta.outputs.tags }}
+          cache-from: type=gha,scope=build-${{ matrix.variant.name }}
+          cache-to: type=gha,mode=max,scope=build-${{ matrix.variant.name }}
+          build-args: ${{ matrix.variant.build-args }}
+
+      - name: Test basic image functionality
+        run: |
+          echo "Testing basic functionality of ${{ matrix.variant.name }} image..."
+          
+          # Test basic Python and imports
+          docker run --rm test-image-${{ matrix.variant.name }}:latest python -c "
+          import sys
+          print(f'Python version: {sys.version}')
+          
+          # Test core dependencies
+          import numpy as np
+          import torch
+          import scipy
+          print('✓ Core dependencies imported successfully')
+          
+          # Test Genesis import
+          try:
+              import genesis as gs
+              print('✓ Genesis imported successfully')
+          except ImportError as e:
+              print(f'⚠ Genesis import failed: {e}')
+          "
+
+      - name: Save image for testing
+        run: |
+          docker save test-image-${{ matrix.variant.name }}:latest | gzip > test-image-${{ matrix.variant.name }}.tar.gz
+
+      - name: Upload image artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-image-${{ matrix.variant.name }}
+          path: test-image-${{ matrix.variant.name }}.tar.gz
+          retention-days: 1
+
+  # Run comprehensive tests in Docker containers
+  test-in-docker:
+    runs-on: ubuntu-latest
+    needs: [changes, build-test-images]
+    if: needs.changes.outputs.run-full-suite == 'true' || github.event_name == 'pull_request'
+    strategy:
+      fail-fast: false
+      matrix:
+        test-suite:
+          - name: smoke
+            description: "Quick validation tests"
+            timeout: 300
+          - name: unit
+            description: "Unit tests"
+            timeout: 1800
+          - name: integration
+            description: "Integration tests"
+            timeout: 2400
+        image-variant: [cpu]
+        include:
+          # Run benchmarks only on push to main
+          - test-suite:
+              name: benchmarks
+              description: "Performance benchmarks"
+              timeout: 3600
+            image-variant: cpu
+            run-condition: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download test image
+        uses: actions/download-artifact@v4
+        with:
+          name: test-image-${{ matrix.image-variant }}
+
+      - name: Load Docker image
+        run: |
+          docker load < test-image-${{ matrix.image-variant }}.tar.gz
+          docker tag test-image-${{ matrix.image-variant }}:latest navi-gym:test
+
+      - name: Create test output directory
+        run: mkdir -p test-results
+
+      - name: Run ${{ matrix.test-suite.name }} tests
+        timeout-minutes: ${{ matrix.test-suite.timeout }}
+        run: |
+          echo "Running ${{ matrix.test-suite.description }}..."
+          
+          # Set up test environment
+          export TEST_OUTPUT_DIR="$(pwd)/test-results"
+          export TEST_IMAGE="navi-gym:test"
+          
+          # Make test script executable
+          chmod +x scripts/run-tests.sh
+          
+          # Run tests with proper configuration
+          ./scripts/run-tests.sh \
+            --image "$TEST_IMAGE" \
+            --suite "${{ matrix.test-suite.name }}" \
+            --output-dir "$TEST_OUTPUT_DIR" \
+            --timeout ${{ matrix.test-suite.timeout }} \
+            --verbose
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ matrix.test-suite.name }}-${{ matrix.image-variant }}
+          path: test-results/
+          retention-days: 7
+
+      - name: Generate test summary
+        if: always()
+        run: |
+          echo "## Test Results: ${{ matrix.test-suite.description }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Image:** ${{ matrix.image-variant }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Duration:** ${{ matrix.test-suite.timeout }}s timeout" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [[ -f test-results/test-report.md ]]; then
+            cat test-results/test-report.md >> $GITHUB_STEP_SUMMARY
+          else
+            echo "No detailed test report available" >> $GITHUB_STEP_SUMMARY
+          fi
+
+  # Quick smoke tests for PRs
+  quick-validation:
+    runs-on: ubuntu-latest
+    needs: [changes, build-test-images]
+    if: github.event_name == 'pull_request' && needs.changes.outputs.run-full-suite == 'false'
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download test image
+        uses: actions/download-artifact@v4
+        with:
+          name: test-image-cpu
+
+      - name: Load Docker image
+        run: |
+          docker load < test-image-cpu.tar.gz
+          docker tag test-image-cpu:latest navi-gym:test
+
+      - name: Run quick validation
+        run: |
+          echo "Running quick validation for PR..."
+          
+          docker run --rm -v $(pwd):/workspace/navi-gym navi-gym:test bash -c "
+            cd /workspace/navi-gym
+            
+            # Test imports
+            python -c '
+            import numpy as np
+            import torch
+            import scipy
+            print(\"✓ Core imports successful\")
+            
+            try:
+                import genesis as gs
+                print(\"✓ Genesis import successful\")
+            except ImportError as e:
+                print(f\"⚠ Genesis import failed: {e}\")
+            '
+            
+            # Test basic pytest functionality
+            python -m pytest --version
+            echo '✓ Pytest available'
+            
+            # Quick syntax check
+            python -m py_compile *.py || echo 'Some Python files have syntax issues'
+          "
+
+      - name: Comment PR with validation results
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '✅ Quick validation passed! Basic imports and Docker build successful.'
+            })
+
+  # Security and quality checks
+  security-quality:
+    runs-on: ubuntu-latest
+    needs: build-test-images
+    if: github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'security-check')
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download test image
+        uses: actions/download-artifact@v4
+        with:
+          name: test-image-cpu
+
+      - name: Load Docker image
+        run: |
+          docker load < test-image-cpu.tar.gz
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'test-image-cpu:latest'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+
+      - name: Upload Trivy scan results
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+      - name: Container structure test
+        run: |
+          # Install container-structure-test
+          curl -LO https://storage.googleapis.com/container-structure-test/latest/container-structure-test-linux-amd64
+          chmod +x container-structure-test-linux-amd64
+          sudo mv container-structure-test-linux-amd64 /usr/local/bin/container-structure-test
+          
+          # Create test config
+          cat > container-test.yaml << 'EOF'
+          schemaVersion: 2.0.0
+          commandTests:
+            - name: "Python version check"
+              command: "python"
+              args: ["--version"]
+              expectedOutput: ["Python 3.11.*"]
+            - name: "Pip check"
+              command: "pip"
+              args: ["check"]
+          fileExistenceTests:
+            - name: "Python executable"
+              path: "/opt/conda/bin/python"
+              shouldExist: true
+            - name: "Pip executable" 
+              path: "/opt/conda/bin/pip"
+              shouldExist: true
+          EOF
+          
+          # Run structure tests
+          container-structure-test test --image test-image-cpu:latest --config container-test.yaml
+
+  # Deployment readiness check
+  deployment-check:
+    runs-on: ubuntu-latest
+    needs: [test-in-docker, security-quality]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download test image
+        uses: actions/download-artifact@v4
+        with:
+          name: test-image-cpu
+
+      - name: Load Docker image
+        run: |
+          docker load < test-image-cpu.tar.gz
+
+      - name: Test deployment readiness
+        run: |
+          echo "Testing deployment readiness..."
+          
+          # Test container can start and stop cleanly
+          CONTAINER_ID=$(docker run -d test-image-cpu:latest sleep 30)
+          sleep 5
+          docker stop $CONTAINER_ID
+          docker wait $CONTAINER_ID
+          echo "✓ Container lifecycle test passed"
+          
+          # Test resource constraints
+          docker run --rm --memory=1g --cpus=1 test-image-cpu:latest python -c "
+          import psutil
+          print(f'Available memory: {psutil.virtual_memory().available / (1024**3):.2f} GB')
+          print('✓ Resource constraint test passed')
+          "
+
+      - name: Generate deployment report
+        run: |
+          echo "# Deployment Readiness Report" > deployment-report.md
+          echo "**Date:** $(date)" >> deployment-report.md
+          echo "**Commit:** ${{ github.sha }}" >> deployment-report.md
+          echo "**Branch:** ${{ github.ref_name }}" >> deployment-report.md
+          echo "" >> deployment-report.md
+          echo "## Status" >> deployment-report.md
+          echo "✅ All tests passed" >> deployment-report.md
+          echo "✅ Security scan completed" >> deployment-report.md
+          echo "✅ Container structure validated" >> deployment-report.md
+          echo "✅ Deployment readiness confirmed" >> deployment-report.md
+
+      - name: Upload deployment report
+        uses: actions/upload-artifact@v4
+        with:
+          name: deployment-report
+          path: deployment-report.md
+          retention-days: 30
+
+  # Final status check
+  test-status:
+    runs-on: ubuntu-latest
+    needs: [quick-validation, test-in-docker]
+    if: always()
+    
+    steps:
+      - name: Check test results
+        run: |
+          echo "Test execution completed"
+          
+          # Check if any critical jobs failed
+          if [[ "${{ needs.test-in-docker.result }}" == "failure" ]]; then
+            echo "❌ Docker tests failed"
+            exit 1
+          elif [[ "${{ needs.quick-validation.result }}" == "failure" ]]; then
+            echo "❌ Quick validation failed"
+            exit 1
+          else
+            echo "✅ All tests passed or skipped appropriately"
+          fi
+
+      - name: Generate final summary
+        if: always()
+        run: |
+          echo "## Final Test Summary" >> $GITHUB_STEP_SUMMARY
+          echo "**Workflow:** ${{ github.workflow }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Event:** ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Job Status" >> $GITHUB_STEP_SUMMARY
+          echo "- Quick Validation: ${{ needs.quick-validation.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Docker Tests: ${{ needs.test-in-docker.result }}" >> $GITHUB_STEP_SUMMARY

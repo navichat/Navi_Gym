@@ -9,6 +9,10 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
+env:
+  # Integration with Docker-based CI/CD
+  DOCKER_INTEGRATION: true
+
 jobs:
   generic-cpu:
     strategy:
@@ -117,3 +121,34 @@ jobs:
           # Note that it is necessary to create a new archive systematically for now:
           # See: https://github.com/actions/cache/issues/1594
           key: ${{ matrix.OS }}-${{ matrix.PYTHON_VERSION }}-${{ github.run_id }}-${{ github.run_attempt }}
+
+      - name: Check Docker CI/CD Integration
+        if: matrix.OS == 'ubuntu-22.04' && matrix.PYTHON_VERSION == '3.12'
+        run: |
+          echo "Checking Docker CI/CD integration..."
+          
+          # Validate Docker files exist
+          if [ -f "docker/Dockerfile" ] && [ -f "docker/Dockerfile.amdgpu" ]; then
+            echo "✓ Docker configurations found"
+          else
+            echo "✗ Docker configurations missing"
+            exit 1
+          fi
+          
+          # Validate CI/CD scripts exist
+          if [ -f "scripts/build-docker.sh" ] && [ -f "scripts/run-tests.sh" ]; then
+            echo "✓ CI/CD scripts found"
+          else
+            echo "✗ CI/CD scripts missing"
+            exit 1
+          fi
+          
+          # Validate GitHub Actions workflows
+          if [ -f ".github/workflows/docker-ci.yml" ] && [ -f ".github/workflows/deploy.yml" ]; then
+            echo "✓ Docker workflows found"
+          else
+            echo "✗ Docker workflows missing"
+            exit 1
+          fi
+          
+          echo "✓ Docker CI/CD integration validated"

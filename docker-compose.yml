@@ -1,0 +1,186 @@
+version: '3.8'
+
+services:
+  # Main Navi Gym service
+  navi-gym:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      args:
+        PYTHON_VERSION: 3.11
+    image: navi-gym:latest
+    container_name: navi-gym-dev
+    volumes:
+      - .:/workspace/navi-gym
+      - navi-cache:/root/.cache
+    working_dir: /workspace/navi-gym
+    environment:
+      - PYTHONPATH=/workspace/navi-gym
+      - DISPLAY=${DISPLAY}
+      - TI_OFFLINE_CACHE=1
+      - TI_OFFLINE_CACHE_FILE_PATH=/root/.cache/taichi
+    stdin_open: true
+    tty: true
+    command: bash
+
+  # NVIDIA GPU version
+  navi-gym-nvidia:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      args:
+        PYTHON_VERSION: 3.11
+    image: navi-gym:nvidia
+    container_name: navi-gym-nvidia-dev
+    volumes:
+      - .:/workspace/navi-gym
+      - navi-cache:/root/.cache
+    working_dir: /workspace/navi-gym
+    environment:
+      - PYTHONPATH=/workspace/navi-gym
+      - DISPLAY=${DISPLAY}
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=all
+      - TI_ENABLE_CUDA=1
+      - TI_OFFLINE_CACHE=1
+      - TI_OFFLINE_CACHE_FILE_PATH=/root/.cache/taichi
+    runtime: nvidia
+    stdin_open: true
+    tty: true
+    command: bash
+
+  # AMD GPU version
+  navi-gym-amd:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.amdgpu
+    image: navi-gym:amd
+    container_name: navi-gym-amd-dev
+    volumes:
+      - .:/workspace/navi-gym
+      - navi-cache:/root/.cache
+    working_dir: /workspace/navi-gym
+    environment:
+      - PYTHONPATH=/workspace/navi-gym
+      - DISPLAY=${DISPLAY}
+      - HSA_OVERRIDE_GFX_VERSION=10.3.0
+      - TI_OFFLINE_CACHE=1
+      - TI_OFFLINE_CACHE_FILE_PATH=/root/.cache/taichi
+    devices:
+      - /dev/kfd:/dev/kfd
+      - /dev/dri:/dev/dri
+    group_add:
+      - video
+      - render
+    stdin_open: true
+    tty: true
+    command: bash
+
+  # Jupyter notebook service
+  jupyter:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      args:
+        PYTHON_VERSION: 3.11
+    image: navi-gym:latest
+    container_name: navi-gym-jupyter
+    ports:
+      - "8888:8888"
+    volumes:
+      - .:/workspace/navi-gym
+      - navi-cache:/root/.cache
+    working_dir: /workspace/navi-gym
+    environment:
+      - PYTHONPATH=/workspace/navi-gym
+      - TI_OFFLINE_CACHE=1
+      - TI_OFFLINE_CACHE_FILE_PATH=/root/.cache/taichi
+    command: >
+      bash -c "
+        pip install jupyter jupyterlab ipywidgets &&
+        jupyter lab --ip=0.0.0.0 --port=8888 --no-browser --allow-root --NotebookApp.token='' --NotebookApp.password=''
+      "
+
+  # Testing service
+  test-runner:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      args:
+        PYTHON_VERSION: 3.11
+    image: navi-gym:latest
+    container_name: navi-gym-tests
+    volumes:
+      - .:/workspace/navi-gym
+      - ./test-results:/test-results
+      - navi-cache:/root/.cache
+    working_dir: /workspace/navi-gym
+    environment:
+      - PYTHONPATH=/workspace/navi-gym
+      - DISPLAY=:99
+      - PYOPENGL_PLATFORM=osmesa
+      - TI_ENABLE_CUDA=0
+      - TI_ENABLE_OPENGL=0
+      - TI_ENABLE_VULKAN=0
+      - TI_OFFLINE_CACHE=1
+      - TI_OFFLINE_CACHE_FILE_PATH=/root/.cache/taichi
+    command: >
+      bash -c "
+        echo 'Running comprehensive tests...' &&
+        python -m pytest tests/ --tb=short --junit-xml=/test-results/test-results.xml -v
+      "
+
+  # Documentation service
+  docs:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      args:
+        PYTHON_VERSION: 3.11
+    image: navi-gym:latest
+    container_name: navi-gym-docs
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/workspace/navi-gym
+    working_dir: /workspace/navi-gym
+    environment:
+      - PYTHONPATH=/workspace/navi-gym
+    command: >
+      bash -c "
+        pip install mkdocs mkdocs-material mkdocs-gen-files mkdocs-literate-nav &&
+        if [ ! -f mkdocs.yml ]; then
+          echo 'Creating basic mkdocs.yml...' &&
+          cat > mkdocs.yml << 'EOF'
+        site_name: Navi Gym Documentation
+        site_description: Physics simulation environment for AI training
+        theme:
+          name: material
+          features:
+            - navigation.tabs
+            - navigation.sections
+            - toc.integrate
+        nav:
+          - Home: index.md
+          - Getting Started: getting-started.md
+          - API Reference: api.md
+        markdown_extensions:
+          - pymdownx.highlight
+          - pymdownx.superfences
+          - admonition
+        EOF
+          mkdir -p docs &&
+          echo '# Navi Gym' > docs/index.md &&
+          echo 'Welcome to Navi Gym documentation!' >> docs/index.md
+        fi &&
+        mkdocs serve --dev-addr=0.0.0.0:8000
+      "
+
+volumes:
+  navi-cache:
+    driver: local
+
+# Network configuration
+networks:
+  default:
+    driver: bridge

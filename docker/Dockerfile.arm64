@@ -1,0 +1,67 @@
+ARG PYTHON_VERSION=3.11
+ARG TARGETPLATFORM=linux/arm64
+
+# ARM64-optimized Dockerfile for Navi Gym (CPU-only)
+FROM ubuntu:22.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install runtime dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    git \
+    curl \
+    wget \
+    bash-completion \
+    libgl1 \
+    libgl1-mesa-glx \
+    libegl-dev \
+    libegl1 \
+    libxrender1 \
+    libglib2.0-0 \
+    ffmpeg \
+    libgtk2.0-dev \
+    pkg-config \
+    libgles2 \
+    libglvnd0 \
+    libglx0 \
+    && apt clean \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /workspace
+
+# Install Python and pip
+RUN apt-get update && apt-get install -y \
+    python3 \
+    python3-pip \
+    python3-dev
+
+# Install Python dependencies for ARM64
+RUN pip3 install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu
+RUN pip3 install --no-cache-dir numpy
+RUN pip3 install --no-cache-dir pytest pytest-asyncio black flake8
+
+# Install additional dependencies with fallback
+RUN pip3 install --no-cache-dir scipy || echo "scipy not available for ARM64"
+RUN pip3 install --no-cache-dir matplotlib || echo "matplotlib not available for ARM64"
+RUN pip3 install --no-cache-dir opencv-python || echo "opencv not available for ARM64"
+
+# Try to install Genesis dependencies (may need ARM64-specific handling)
+RUN pip3 install --no-cache-dir \
+    taichi \
+    trimesh \
+    Pillow \
+    pyyaml \
+    || echo "Some packages may not be available for ARM64"
+
+# Set ARM64-specific optimizations
+ENV OMP_NUM_THREADS=4
+ENV OPENBLAS_NUM_THREADS=4
+ENV MKL_NUM_THREADS=4
+ENV PYTHONPATH=/workspace/navi-gym
+
+# Test environment for headless operation
+ENV DISPLAY=:99
+ENV PYOPENGL_PLATFORM=osmesa
+
+ENTRYPOINT ["/bin/bash"]

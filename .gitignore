@@ -1,5 +1,19 @@
 logs/
 tmp/
+# GitHub Actions Runners - exclude all runner directories
+actions-runner/
+actions-runner-arm64/
+actions-runner*
+**/actions-runner/
+**/actions-runner-arm64/
+# Runner configuration files
+.runner
+.credentials
+.credentials_rsaparams
+# Runner binaries and scripts
+**/run.sh
+**/config.sh
+**/svc.sh
 MUJOCO_LOG.TXT
 imgui.ini
 .DS_Store
