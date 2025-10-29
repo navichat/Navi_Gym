@@ -133,7 +133,7 @@ jobs:
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}-cpu \
             bash -c "
               echo 'Installing test dependencies...'
-              pip install pytest pytest-xvfb pytest-cov pytest-mock
+              pip install pytest pytest-xdist pytest-xvfb pytest-cov pytest-mock
               
               echo 'Running ${{ matrix.test_suite }} tests...'
               case '${{ matrix.test_suite }}' in
@@ -206,7 +206,7 @@ jobs:
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}-gpu \
             bash -c "
               echo 'Installing test dependencies...'
-              pip install pytest pytest-xvfb pytest-cov pytest-mock
+              pip install pytest pytest-xdist pytest-xvfb pytest-cov pytest-mock
               
               echo 'Checking GPU availability...'
               python -c 'import torch; print(\"CUDA available:\", torch.cuda.is_available()); print(\"GPU count:\", torch.cuda.device_count())'

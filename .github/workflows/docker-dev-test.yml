@@ -105,7 +105,7 @@ print(\"✅ NumPy computation test passed\")
             navi-gym-test:latest \
             bash -c "
               echo 'Installing test dependencies...'
-              pip install pytest pytest-xvfb pytest-mock
+              pip install pytest pytest-xdist pytest-xvfb pytest-mock
               
               echo 'Running unit tests...'
               if [ -d tests ]; then
@@ -145,7 +145,7 @@ print(\"✅ NumPy computation test passed\")
             navi-gym-test:latest \
             bash -c "
               echo 'Installing test dependencies...'
-              pip install pytest pytest-xvfb pytest-mock
+              pip install pytest pytest-xdist pytest-xvfb pytest-mock
               
               echo 'Running integration tests...'
               # Run specific integration test files if they exist
