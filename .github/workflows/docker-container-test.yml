@@ -85,7 +85,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: docker/Dockerfile${{ matrix.image_type == 'gpu' && '' || '.simple-arm64' }}
+          file: docker/Dockerfile
           platforms: ${{ github.event.inputs.docker_platform || 'linux/amd64' }}
           push: true
           tags: ${{ steps.meta.outputs.tags }}-${{ matrix.image_type }}
