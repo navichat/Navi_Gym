@@ -64,13 +64,7 @@ jobs:
               python -c 'try: import genesis as gs; print(\"✅ Genesis: Successfully imported\"); except Exception as e: print(\"⚠️ Genesis:\", e)'
               
               echo '=== Basic Functionality Test ==='
-              python -c '
-import numpy as np
-a = np.random.rand(100, 100)
-b = np.random.rand(100, 100)
-c = np.dot(a, b)
-print(\"✅ NumPy computation test passed\")
-              '
+              python -c 'import numpy as np; a = np.random.rand(100, 100); b = np.random.rand(100, 100); c = np.dot(a, b); print(\"✅ NumPy computation test passed\")'
               
               echo '=== PyTorch GPU Check ==='
               python -c 'import torch; print(\"CUDA available:\", torch.cuda.is_available())'
@@ -105,7 +99,7 @@ print(\"✅ NumPy computation test passed\")
             navi-gym-test:latest \
             bash -c "
               echo 'Installing test dependencies...'
-              pip install pytest pytest-xvfb pytest-mock
+              pip install pytest pytest-xdist pytest-xvfb pytest-mock
               
               echo 'Running unit tests...'
               if [ -d tests ]; then
@@ -145,7 +139,7 @@ print(\"✅ NumPy computation test passed\")
             navi-gym-test:latest \
             bash -c "
               echo 'Installing test dependencies...'
-              pip install pytest pytest-xvfb pytest-mock
+              pip install pytest pytest-xdist pytest-xvfb pytest-mock
               
               echo 'Running integration tests...'
               # Run specific integration test files if they exist
@@ -196,43 +190,15 @@ print(\"✅ NumPy computation test passed\")
               python -c 'import psutil; print(\"CPU cores:\", psutil.cpu_count()); print(\"Memory (GB):\", round(psutil.virtual_memory().total / (1024**3), 2))'
               
               echo '=== NumPy Performance Benchmark ==='
-              python -c '
-import time
-import numpy as np
-
-sizes = [100, 500, 1000]
-for size in sizes:
-    start = time.time()
-    a = np.random.rand(size, size)
-    b = np.random.rand(size, size)
-    c = np.dot(a, b)
-    end = time.time()
-    print(f\"Matrix {size}x{size} multiplication: {end-start:.3f}s\")
-              '
+              python -c 'import time, numpy as np; size=100; start=time.time(); c=np.dot(np.random.rand(size,size), np.random.rand(size,size)); print(f\"Matrix {size}x{size} multiplication: {time.time()-start:.3f}s\")'
+              python -c 'import time, numpy as np; size=500; start=time.time(); c=np.dot(np.random.rand(size,size), np.random.rand(size,size)); print(f\"Matrix {size}x{size} multiplication: {time.time()-start:.3f}s\")'
+              python -c 'import time, numpy as np; size=1000; start=time.time(); c=np.dot(np.random.rand(size,size), np.random.rand(size,size)); print(f\"Matrix {size}x{size} multiplication: {time.time()-start:.3f}s\")'
               
               echo '=== Import Performance ==='
-              python -c '
-import time
-
-modules = [\"numpy\", \"torch\", \"trimesh\"]
-for module in modules:
-    start = time.time()
-    try:
-        __import__(module)
-        end = time.time()
-        print(f\"{module} import: {end-start:.3f}s\")
-    except ImportError:
-        print(f\"{module}: not available\")
-
-# Test Genesis import
-start = time.time()
-try:
-    import genesis as gs
-    end = time.time()
-    print(f\"genesis import: {end-start:.3f}s\")
-except ImportError as e:
-    print(f\"genesis: not available ({e})\")
-              '
+              python -c 'import time; start=time.time(); import numpy; print(f\"numpy import: {time.time()-start:.3f}s\")'
+              python -c 'import time; start=time.time(); import torch; print(f\"torch import: {time.time()-start:.3f}s\")' || echo 'torch: not available'
+              python -c 'import time; start=time.time(); import trimesh; print(f\"trimesh import: {time.time()-start:.3f}s\")' || echo 'trimesh: not available'
+              python -c 'import time; start=time.time(); import genesis as gs; print(f\"genesis import: {time.time()-start:.3f}s\")' || echo 'genesis: not available'
             "
 
       - name: Upload performance results

@@ -85,7 +85,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: docker/Dockerfile${{ matrix.image_type == 'gpu' && '' || '.simple-arm64' }}
+          file: docker/Dockerfile
           platforms: ${{ github.event.inputs.docker_platform || 'linux/amd64' }}
           push: true
           tags: ${{ steps.meta.outputs.tags }}-${{ matrix.image_type }}
@@ -133,7 +133,7 @@ jobs:
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}-cpu \
             bash -c "
               echo 'Installing test dependencies...'
-              pip install pytest pytest-xvfb pytest-cov pytest-mock
+              pip install pytest pytest-xdist pytest-xvfb pytest-cov pytest-mock
               
               echo 'Running ${{ matrix.test_suite }} tests...'
               case '${{ matrix.test_suite }}' in
@@ -206,7 +206,7 @@ jobs:
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}-gpu \
             bash -c "
               echo 'Installing test dependencies...'
-              pip install pytest pytest-xvfb pytest-cov pytest-mock
+              pip install pytest pytest-xdist pytest-xvfb pytest-cov pytest-mock
               
               echo 'Checking GPU availability...'
               python -c 'import torch; print(\"CUDA available:\", torch.cuda.is_available()); print(\"GPU count:\", torch.cuda.device_count())'
@@ -270,33 +270,9 @@ jobs:
                 python -m pytest tests/ -k 'benchmark' -v --tb=short --disable-warnings || echo 'No benchmark tests found'
               else
                 echo 'Running basic performance tests...'
-              python -c \"
-import time
-import psutil
-import numpy as np
-
-print('=== System Info ===')
-print(f'CPU count: {psutil.cpu_count()}')
-print(f'Memory: {psutil.virtual_memory().total / (1024**3):.2f} GB')
-
-print('=== NumPy Performance ===')
-size = 1000
-start = time.time()
-a = np.random.rand(size, size)
-b = np.random.rand(size, size)
-c = np.dot(a, b)
-end = time.time()
-print(f'Matrix multiplication ({size}x{size}): {end-start:.3f}s')
-
-print('=== Import Performance ===')
-start = time.time()
-try:
-    import genesis as gs
-    end = time.time()
-    print(f'Genesis import time: {end-start:.3f}s')
-except ImportError:
-    print('Genesis not available for import test')
-              \"
+                python -c 'import time, psutil, numpy as np; print(\"=== System Info ===\"); print(f\"CPU count: {psutil.cpu_count()}\"); print(f\"Memory: {psutil.virtual_memory().total / (1024**3):.2f} GB\")'
+                python -c 'import time, numpy as np; size = 1000; start = time.time(); a = np.random.rand(size, size); b = np.random.rand(size, size); c = np.dot(a, b); end = time.time(); print(f\"Matrix multiplication ({size}x{size}): {end-start:.3f}s\")'
+                python -c 'import time; start = time.time(); (lambda: __import__(\"genesis\"))(); end = time.time(); print(f\"Genesis import time: {end-start:.3f}s\")' || echo 'Genesis not available'
               fi
             "
 

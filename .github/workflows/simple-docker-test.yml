@@ -208,7 +208,7 @@ jobs:
             navi-gym-test:latest \
             bash -c "
               echo 'Installing pytest...'
-              pip install pytest pytest-xvfb pytest-mock
+              pip install pytest pytest-xdist pytest-xvfb pytest-mock
               
               echo 'Running unit tests...'
               if [ -d tests ]; then

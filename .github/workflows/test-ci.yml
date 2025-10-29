@@ -105,7 +105,7 @@ jobs:
             dockerfile: docker/Dockerfile
             build-args: |
               PYTHON_VERSION=${{ env.PYTHON_VERSION }}
-            platforms: linux/amd64,linux/arm64
+            platforms: linux/amd64
           - name: nvidia
             dockerfile: docker/Dockerfile
             build-args: |
@@ -216,12 +216,15 @@ jobs:
           - name: smoke
             description: "Quick validation tests"
             timeout: 300
+            timeout-minutes: 5
           - name: unit
             description: "Unit tests"
             timeout: 1800
+            timeout-minutes: 30
           - name: integration
             description: "Integration tests"
             timeout: 2400
+            timeout-minutes: 40
         image-variant: [cpu]
         include:
           # Run benchmarks only on push to main
@@ -229,6 +232,7 @@ jobs:
               name: benchmarks
               description: "Performance benchmarks"
               timeout: 3600
+              timeout-minutes: 60
             image-variant: cpu
             run-condition: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
 
@@ -250,7 +254,7 @@ jobs:
         run: mkdir -p test-results
 
       - name: Run ${{ matrix.test-suite.name }} tests
-        timeout-minutes: ${{ matrix.test-suite.timeout }}
+        timeout-minutes: ${{ matrix.test-suite.timeout-minutes }}
         run: |
           echo "Running ${{ matrix.test-suite.description }}..."
           
